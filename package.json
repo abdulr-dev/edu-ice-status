@@ -1,0 +1,16 @@
+{
+  "name": "edu-ice-status-dashboard",
+  "version": "1.0.0",
+  "description": "Edu-ICE Status Dashboard - Track task status across different subjects",
+  "scripts": {
+    "dev": "python3 local-proxy.py"
+  },
+  "keywords": [
+    "dashboard",
+    "status",
+    "tracking"
+  ],
+  "author": "",
+  "license": "MIT"
+}
+

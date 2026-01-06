@@ -1,0 +1,68 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Edu-ICE Status Dashboard</title>
+    <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>📊 Edu-ICE Status Dashboard</h1>
+        </header>
+
+        <div class="tabs">
+            <button class="tab-btn active" data-tab="unclaimed">
+                Unclaimed
+                <span class="tab-count" id="count-unclaimed">0</span>
+            </button>
+            <button class="tab-btn" data-tab="inprogress">
+                In Progress
+                <span class="tab-count" id="count-inprogress">0</span>
+            </button>
+            <button class="tab-btn" data-tab="pending-review">
+                Pending Review
+                <span class="tab-count" id="count-pending-review">0</span>
+            </button>
+            <button class="tab-btn" data-tab="reviewed">
+                Reviewed
+                <span class="tab-count" id="count-reviewed">0</span>
+            </button>
+            <button class="tab-btn" data-tab="rework">
+                Rework
+                <span class="tab-count" id="count-rework">0</span>
+            </button>
+        </div>
+
+        <div class="tab-content active" id="tab-unclaimed">
+            <div class="loading" id="loading-unclaimed">Loading...</div>
+            <div class="subjects-container" id="subjects-unclaimed"></div>
+        </div>
+
+        <div class="tab-content" id="tab-inprogress">
+            <div class="loading" id="loading-inprogress">Loading...</div>
+            <div class="subjects-container" id="subjects-inprogress"></div>
+        </div>
+
+        <div class="tab-content" id="tab-pending-review">
+            <div class="loading" id="loading-pending-review">Loading...</div>
+            <div class="subjects-container" id="subjects-pending-review"></div>
+        </div>
+
+        <div class="tab-content" id="tab-reviewed">
+            <div class="loading" id="loading-reviewed">Loading...</div>
+            <div class="subjects-container" id="subjects-reviewed"></div>
+        </div>
+
+        <div class="tab-content" id="tab-rework">
+            <div class="loading" id="loading-rework">Loading...</div>
+            <div class="subjects-container" id="subjects-rework"></div>
+        </div>
+    </div>
+
+    <script src="config.js"></script>
+    <script src="script.js"></script>
+</body>
+</html>
+

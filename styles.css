@@ -1,0 +1,457 @@
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+}
+
+body {
+    font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+    background: #f5f7fa;
+    min-height: 100vh;
+    padding: 24px;
+    color: #1a202c;
+}
+
+.container {
+    max-width: 1600px;
+    margin: 0 auto;
+    background: #ffffff;
+    border-radius: 24px;
+    box-shadow: 0 20px 60px rgba(0, 0, 0, 0.15), 0 0 0 1px rgba(0, 0, 0, 0.05);
+    overflow: hidden;
+    backdrop-filter: blur(10px);
+}
+
+header {
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    color: white;
+    padding: 28px 32px;
+    position: relative;
+    overflow: hidden;
+}
+
+header::before {
+    content: '';
+    position: absolute;
+    top: -50%;
+    right: -50%;
+    width: 200%;
+    height: 200%;
+    background: radial-gradient(circle, rgba(255, 255, 255, 0.1) 0%, transparent 70%);
+    animation: pulse 8s ease-in-out infinite;
+}
+
+@keyframes pulse {
+    0%, 100% { transform: scale(1); opacity: 0.5; }
+    50% { transform: scale(1.1); opacity: 0.8; }
+}
+
+header h1 {
+    font-size: 1.75rem;
+    font-weight: 600;
+    letter-spacing: -0.5px;
+    position: relative;
+    z-index: 1;
+    text-shadow: 0 2px 10px rgba(0, 0, 0, 0.2);
+}
+
+.tabs {
+    display: flex;
+    background: linear-gradient(to bottom, #f8f9fa 0%, #ffffff 100%);
+    border-bottom: 1px solid #e5e7eb;
+    overflow-x: auto;
+    position: relative;
+}
+
+.tabs::after {
+    content: '';
+    position: absolute;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    height: 1px;
+    background: linear-gradient(to right, transparent, #e5e7eb, transparent);
+}
+
+.tab-btn {
+    flex: 1;
+    padding: 18px 24px;
+    background: transparent;
+    border: none;
+    cursor: pointer;
+    font-size: 0.95rem;
+    font-weight: 600;
+    color: #6b7280;
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    position: relative;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 10px;
+    min-width: 140px;
+}
+
+.tab-btn::before {
+    content: '';
+    position: absolute;
+    bottom: 0;
+    left: 50%;
+    transform: translateX(-50%) scaleX(0);
+    width: 60%;
+    height: 3px;
+    background: linear-gradient(90deg, #667eea, #764ba2);
+    border-radius: 3px 3px 0 0;
+    transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.tab-btn:hover {
+    background: linear-gradient(to bottom, rgba(102, 126, 234, 0.05), transparent);
+    color: #374151;
+    transform: translateY(-1px);
+}
+
+.tab-btn.active {
+    color: #6366f1;
+    background: linear-gradient(to bottom, rgba(102, 126, 234, 0.08), transparent);
+}
+
+.tab-btn.active::before {
+    transform: translateX(-50%) scaleX(1);
+}
+
+.tab-count {
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    color: white;
+    padding: 4px 10px;
+    border-radius: 12px;
+    font-size: 0.75rem;
+    font-weight: 700;
+    min-width: 26px;
+    text-align: center;
+    box-shadow: 0 2px 8px rgba(102, 126, 234, 0.3);
+    transition: all 0.3s ease;
+}
+
+.tab-btn.active .tab-count {
+    background: linear-gradient(135deg, #8b5cf6 0%, #a855f7 100%);
+    box-shadow: 0 4px 12px rgba(139, 92, 246, 0.4);
+    transform: scale(1.1);
+}
+
+.tab-btn:hover .tab-count {
+    transform: scale(1.05);
+}
+
+.tab-content {
+    display: none;
+    padding: 24px;
+    min-height: 400px;
+    background: linear-gradient(to bottom, #f9fafb 0%, #ffffff 100%);
+    animation: fadeIn 0.3s ease;
+}
+
+@keyframes fadeIn {
+    from { opacity: 0; transform: translateY(10px); }
+    to { opacity: 1; transform: translateY(0); }
+}
+
+.tab-content.active {
+    display: block;
+}
+
+.loading {
+    text-align: center;
+    padding: 80px;
+    font-size: 1rem;
+    color: #6b7280;
+}
+
+.subjects-container {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(340px, 1fr));
+    gap: 24px;
+}
+
+.subject-card {
+    background: #ffffff;
+    border-radius: 16px;
+    padding: 24px;
+    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.05), 0 1px 3px rgba(0, 0, 0, 0.1);
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    border: 1px solid rgba(229, 231, 235, 0.8);
+    min-width: 320px;
+    position: relative;
+    overflow: hidden;
+}
+
+.subject-card::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    height: 4px;
+    background: linear-gradient(90deg, #667eea, #764ba2);
+    transform: scaleX(0);
+    transition: transform 0.3s ease;
+}
+
+.subject-card:hover {
+    transform: translateY(-4px);
+    box-shadow: 0 12px 24px rgba(0, 0, 0, 0.1), 0 4px 8px rgba(0, 0, 0, 0.08);
+    border-color: rgba(102, 126, 234, 0.3);
+}
+
+.subject-card:hover::before {
+    transform: scaleX(1);
+}
+
+.subject-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 20px;
+    padding-bottom: 16px;
+    border-bottom: 2px solid #f3f4f6;
+    position: relative;
+}
+
+.subject-title {
+    font-size: 1.1rem;
+    font-weight: 600;
+    color: #111827;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    letter-spacing: -0.3px;
+}
+
+.subject-total {
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    color: white;
+    padding: 6px 14px;
+    border-radius: 8px;
+    font-size: 0.9rem;
+    font-weight: 700;
+    box-shadow: 0 2px 4px rgba(102, 126, 234, 0.2);
+    transition: all 0.3s ease;
+}
+
+.subject-card:hover .subject-total {
+    box-shadow: 0 6px 16px rgba(102, 126, 234, 0.4);
+    transform: scale(1.05);
+}
+
+.formstage-grid {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 12px;
+    justify-content: flex-start;
+    align-items: flex-start;
+}
+
+/* When there are exactly 3 items, use special layout: 2 on top, 1 centered below */
+.formstage-grid:has(.formstage-card.third-card) {
+    display: grid;
+    grid-template-columns: repeat(2, 140px);
+    justify-content: center;
+    gap: 12px;
+}
+
+.formstage-grid:has(.formstage-card.third-card) .formstage-card.third-card {
+    grid-column: 1 / -1;
+    justify-self: center;
+}
+
+.formstage-card {
+    background: #ffffff;
+    border-radius: 12px;
+    padding: 10px 8px;
+    text-align: center;
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    border: 2px solid #e5e7eb;
+    height: 90px;
+    width: 140px;
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+    align-items: center;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
+    position: relative;
+    overflow: hidden;
+}
+
+.formstage-card::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    height: 3px;
+    background: currentColor;
+    transform: scaleX(0);
+    transition: transform 0.3s ease;
+}
+
+.formstage-card:hover {
+    transform: translateY(-3px) scale(1.02);
+    box-shadow: 0 8px 16px rgba(0, 0, 0, 0.12);
+}
+
+.formstage-card:hover::before {
+    transform: scaleX(1);
+}
+
+.formstage-card.codability {
+    border-color: #3b82f6;
+    background: linear-gradient(135deg, #eff6ff 0%, #dbeafe 100%);
+    color: #2563eb;
+}
+
+.formstage-card.codability:hover {
+    border-color: #2563eb;
+    background: linear-gradient(135deg, #dbeafe 0%, #bfdbfe 100%);
+    box-shadow: 0 8px 16px rgba(59, 130, 246, 0.2);
+}
+
+.formstage-card.codability .formstage-count {
+    color: #1d4ed8;
+}
+
+.formstage-card.ground-truth {
+    border-color: #10b981;
+    background: linear-gradient(135deg, #ecfdf5 0%, #d1fae5 100%);
+    color: #059669;
+}
+
+.formstage-card.ground-truth:hover {
+    border-color: #059669;
+    background: linear-gradient(135deg, #d1fae5 0%, #a7f3d0 100%);
+    box-shadow: 0 8px 16px rgba(16, 185, 129, 0.2);
+}
+
+.formstage-card.ground-truth .formstage-count {
+    color: #047857;
+}
+
+.formstage-card.image-rubrics {
+    border-color: #f59e0b;
+    background: linear-gradient(135deg, #fffbeb 0%, #fef3c7 100%);
+    color: #d97706;
+}
+
+.formstage-card.image-rubrics:hover {
+    border-color: #d97706;
+    background: linear-gradient(135deg, #fef3c7 0%, #fde68a 100%);
+    box-shadow: 0 8px 16px rgba(245, 158, 11, 0.2);
+}
+
+.formstage-card.image-rubrics .formstage-count {
+    color: #b45309;
+}
+
+.formstage-card.no-formstage {
+    border-color: #6b7280;
+    background: linear-gradient(135deg, #f9fafb 0%, #f3f4f6 100%);
+    color: #4b5563;
+}
+
+.formstage-card.no-formstage:hover {
+    border-color: #4b5563;
+    background: linear-gradient(135deg, #f3f4f6 0%, #e5e7eb 100%);
+    box-shadow: 0 8px 16px rgba(107, 114, 128, 0.2);
+}
+
+.formstage-card.no-formstage .formstage-count {
+    color: #374151;
+}
+
+.formstage-name {
+    font-size: 0.6rem;
+    color: #6b7280;
+    font-weight: 600;
+    margin-bottom: 6px;
+    line-height: 1.3;
+    text-transform: uppercase;
+    letter-spacing: 0.2px;
+    max-width: 100%;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: normal;
+    word-wrap: break-word;
+    display: -webkit-box;
+    -webkit-line-clamp: 2;
+    -webkit-box-orient: vertical;
+    min-height: 28px;
+    max-height: 28px;
+}
+
+.formstage-count {
+    font-size: 1.75rem;
+    font-weight: 700;
+    line-height: 1;
+    transition: transform 0.3s ease;
+}
+
+.formstage-card:hover .formstage-count {
+    transform: scale(1.1);
+}
+
+.empty-state {
+    text-align: center;
+    padding: 80px 20px;
+    color: #6b7280;
+}
+
+.empty-state-icon {
+    font-size: 4rem;
+    margin-bottom: 20px;
+    opacity: 0.3;
+    animation: float 3s ease-in-out infinite;
+}
+
+@keyframes float {
+    0%, 100% { transform: translateY(0px); }
+    50% { transform: translateY(-10px); }
+}
+
+.empty-state-text {
+    font-size: 1.1rem;
+    font-weight: 500;
+}
+
+@media (max-width: 768px) {
+    body {
+        padding: 12px;
+    }
+
+    header {
+        padding: 24px;
+    }
+
+    header h1 {
+        font-size: 1.5rem;
+    }
+
+    .tabs {
+        flex-wrap: nowrap;
+    }
+
+    .tab-btn {
+        min-width: 100px;
+        padding: 14px 12px;
+        font-size: 0.85rem;
+    }
+
+    .subjects-container {
+        grid-template-columns: 1fr;
+    }
+
+    .formstage-grid {
+        grid-template-columns: repeat(2, 140px);
+    }
+
+    .tab-content {
+        padding: 20px;
+    }
+}
