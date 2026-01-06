@@ -5,6 +5,9 @@
   "scripts": {
     "dev": "python3 local-proxy.py"
   },
+  "engines": {
+    "node": "18.x"
+  },
   "keywords": [
     "dashboard",
     "status",
