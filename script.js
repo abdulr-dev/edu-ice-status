@@ -211,6 +211,29 @@ function buildApiUrl(tabName, page) {
         params.append('filter[3]', 'projectId||$eq||' + PROJECT_ID + '');
         params.append('filter[4]', 'batch.status||$ne||draft');
         params.append('filter[5]', 'batch.status||$ne||archived');
+    } else if (tabName === 'improper') {
+        // Improper status
+        params.append('join[0]', 'seed||metadata,turingMetadata');
+        params.append('join[1]', 'batch');
+        params.append('join[2]', 'project');
+        params.append('filter[0]', 'status||$eq||improper');
+        params.append('filter[1]', 'projectId||$eq||' + PROJECT_ID + '');
+        params.append('filter[2]', 'batch.status||$ne||draft');
+        params.append('filter[3]', 'batch.status||$ne||archived');
+        params.append('filter[4]', 'project.status||$ne||archived');
+    } else if (tabName === 'delivery') {
+        // Delivery - grouped by deliveryBatch name
+        params.append('join[0]', 'seed||metadata,turingMetadata');
+        params.append('join[1]', 'batch');
+        params.append('join[2]', 'project');
+        params.append('join[3]', 'latestDeliveryBatch');
+        params.append('join[4]', 'latestDeliveryBatch.deliveryBatch||id,name,status');
+        params.append('filter[0]', 'latestDeliveryBatch.deliveryBatch||$notnull');
+        params.append('filter[1]', 'status||$eq||completed');
+        params.append('filter[2]', 'batch.status||$ne||draft');
+        params.append('filter[3]', 'batch.status||$ne||archived');
+        params.append('filter[4]', 'project.status||$ne||archived');
+        params.append('filter[5]', 'projectId||$eq||' + PROJECT_ID);
     }
     
     return TURING_API_BASE + '?' + params.toString();
@@ -221,6 +244,43 @@ function displayTasks(tabName, tasks) {
     
     if (tasks.length === 0) {
         container.innerHTML = '<div class="empty-state"><div class="empty-state-icon">📭</div><div class="empty-state-text">No tasks found</div></div>';
+        return;
+    }
+    
+    // For delivery tab, group by subject and deliveryBatch name
+    if (tabName === 'delivery') {
+        const grouped = groupTasksBySubjectAndDeliveryBatch(tasks);
+        
+        let html = '';
+        for (const [subject, deliveryBatches] of Object.entries(grouped)) {
+            const totalCount = Object.values(deliveryBatches).reduce((sum, count) => sum + count, 0);
+            const batchEntries = Object.entries(deliveryBatches);
+            
+            html += `<div class="subject-card">
+                <div class="subject-header">
+                    <span class="subject-title">${subject}</span>
+                    <span class="subject-total">${totalCount} tasks</span>
+                </div>
+                <div class="formstage-grid ${batchEntries.length === 3 ? 'three-cards' : batchEntries.length === 4 ? 'four-cards' : ''}">`;
+            
+            for (const [batchKey, count] of batchEntries) {
+                // Parse batch name and status from the key
+                const [batchName, batchStatus] = batchKey.split('|||');
+                const isOngoing = batchStatus === 'ongoing';
+                const statusClass = isOngoing ? 'delivery-ongoing' : 'delivery-delivered';
+                const statusLabel = isOngoing ? 'Ongoing' : 'Delivered';
+                
+                html += `<div class="formstage-card delivery-batch ${statusClass}">
+                    <div class="formstage-status-badge">${statusLabel}</div>
+                    <div class="formstage-name">${batchName}</div>
+                    <div class="formstage-count">${count}</div>
+                </div>`;
+            }
+            
+            html += `</div></div>`;
+        }
+        
+        container.innerHTML = html;
         return;
     }
     
@@ -238,10 +298,11 @@ function displayTasks(tabName, tasks) {
                 <span class="subject-title">${subject}</span>
                 <span class="subject-total">${totalCount} tasks</span>
             </div>
-            <div class="formstage-grid ${formStageEntries.length === 3 ? 'three-cards' : ''}">`;
+            <div class="formstage-grid ${formStageEntries.length === 3 ? 'three-cards' : formStageEntries.length === 4 ? 'four-cards' : ''}">`;
         
         for (const [formStage, count] of formStageEntries) {
-            const colorClass = getFormStageColorClass(formStage);
+            // For improper tab, use 'improper' class for all cards
+            const colorClass = tabName === 'improper' ? 'improper' : getFormStageColorClass(formStage);
             html += `<div class="formstage-card ${colorClass}">
                 <div class="formstage-name">${formStage}</div>
                 <div class="formstage-count">${count}</div>
@@ -320,6 +381,75 @@ function groupTasksBySubjectAndFormStage(tasks) {
         }
     });
     // Add any unknown subjects at the end
+    Object.keys(grouped).forEach(subj => {
+        if (!sortedGrouped[subj]) {
+            sortedGrouped[subj] = grouped[subj];
+        }
+    });
+    
+    return sortedGrouped;
+}
+
+function groupTasksBySubjectAndDeliveryBatch(tasks) {
+    const grouped = {};
+    
+    tasks.forEach(task => {
+        // Extract subject - check multiple possible locations
+        let subject = 'Unknown';
+        if (task.seed) {
+            const metadata = task.seed.metadata || {};
+            const turingMetadata = task.seed.turingMetadata || {};
+            
+            subject = metadata.Subject || metadata.subject || 
+                      turingMetadata.Subject || turingMetadata.subject || null;
+            
+            if (!subject) {
+                const allValues = [...Object.values(metadata), ...Object.values(turingMetadata)];
+                for (const val of allValues) {
+                    if (typeof val === 'string') {
+                        const normalized = normalizeSubject(val);
+                        if (KNOWN_SUBJECTS.includes(normalized)) {
+                            subject = val;
+                            break;
+                        }
+                    }
+                }
+            }
+            
+            subject = subject || 'Unknown';
+        }
+        
+        // Normalize subject
+        subject = normalizeSubject(subject);
+        
+        // Extract delivery batch name and status
+        let batchName = 'Unknown Batch';
+        let batchStatus = 'unknown';
+        if (task.latestDeliveryBatch && task.latestDeliveryBatch.deliveryBatch) {
+            batchName = task.latestDeliveryBatch.deliveryBatch.name || 'Unknown Batch';
+            batchStatus = task.latestDeliveryBatch.deliveryBatch.status || 'unknown';
+        }
+        
+        // Create a unique key combining batch name and status
+        const batchKey = `${batchName}|||${batchStatus}`;
+        
+        // Group
+        if (!grouped[subject]) {
+            grouped[subject] = {};
+        }
+        if (!grouped[subject][batchKey]) {
+            grouped[subject][batchKey] = 0;
+        }
+        grouped[subject][batchKey]++;
+    });
+    
+    // Sort subjects by known order
+    const sortedGrouped = {};
+    KNOWN_SUBJECTS.forEach(subj => {
+        if (grouped[subj]) {
+            sortedGrouped[subj] = grouped[subj];
+        }
+    });
     Object.keys(grouped).forEach(subj => {
         if (!sortedGrouped[subj]) {
             sortedGrouped[subj] = grouped[subj];
