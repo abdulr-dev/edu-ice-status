@@ -6,7 +6,7 @@
     "dev": "python3 local-proxy.py"
   },
   "engines": {
-    "node": "18.x"
+    "node": "24.x"
   },
   "keywords": [
     "dashboard",
