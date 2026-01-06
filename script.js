@@ -4,14 +4,23 @@
 // Check if config is loaded
 if (typeof CONFIG === 'undefined') {
     console.error('CONFIG not found! Make sure config.js is loaded before script.js');
+    alert('Configuration error: config.js not loaded. Please refresh the page.');
+    throw new Error('CONFIG not defined');
 }
 
 // Use values from config.js
-const LOCAL_PROXY = CONFIG.LOCAL_PROXY;
+const LOCAL_PROXY = CONFIG.LOCAL_PROXY || 'http://localhost:3000';
 const isLocal = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1' || window.location.protocol === 'file:';
-const isVercel = window.location.hostname.includes('vercel.app');
-const API_BASE_URL = CONFIG.API_BASE_URL;
-const AUTH_TOKEN = CONFIG.AUTH_TOKEN;
+// Check if running on Vercel or any deployed environment (not local)
+const isVercel = !isLocal;
+const API_BASE_URL = CONFIG.API_BASE_URL || 'https://labeling-g.turing.com/api/conversations';
+const AUTH_TOKEN = CONFIG.AUTH_TOKEN || '';
+
+console.log('=== Dashboard Initialized ===');
+console.log('Environment:', isLocal ? 'Local' : 'Deployed');
+console.log('Hostname:', window.location.hostname);
+console.log('Using proxy:', isLocal ? 'Local Python proxy' : 'Vercel serverless function');
+console.log('API Base URL:', API_BASE_URL);
 
 // Status mapping
 const STATUS_MAP = {
@@ -29,8 +38,15 @@ let allTasks = [];
 
 // Initialize dashboard
 document.addEventListener('DOMContentLoaded', () => {
-    setupTabs();
-    loadUnclaimedTasks();
+    console.log('DOM loaded, initializing dashboard...');
+    try {
+        setupTabs();
+        console.log('Tabs setup complete');
+        loadUnclaimedTasks();
+    } catch (error) {
+        console.error('Initialization error:', error);
+        alert('Dashboard initialization failed: ' + error.message);
+    }
 });
 
 // Setup tab switching
@@ -58,8 +74,10 @@ function setupTabs() {
 
 // Load unclaimed tasks (initial load)
 async function loadUnclaimedTasks() {
+    console.log('Loading unclaimed tasks...');
     try {
         const data = await fetchUnclaimedTasks();
+        console.log('Unclaimed tasks data received:', data);
         allTasks = data.data || [];
         displayTasks('unclaimed', allTasks);
         updateCounts();
@@ -457,7 +475,7 @@ async function fetchUnclaimedTasks() {
 
     // No proxy available - show helpful error
     throw new Error('CORS proxy not available. For local development, run: python3 local-proxy.py');
-}
+
 
 // Load data for a specific tab
 async function loadTabData(tabName) {
