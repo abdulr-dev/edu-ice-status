@@ -31,10 +31,36 @@ class ProxyHandler(BaseHTTPRequestHandler):
         print(f"[{self.log_date_time_string()}] {format % args}")
 
     def do_GET(self):
-        if self.path.startswith('/api/'):
-            # Extract the API path (including query string)
-            api_path = self.path[4:]  # Remove '/api'
-            api_url = f'https://labeling-g.turing.com{api_path}'
+        # Strip query string for static file matching
+        path_without_query = self.path.split('?')[0]
+        
+        # Serve static files
+        if path_without_query == '/' or path_without_query == '/index.html':
+            self.serve_file('index.html', 'text/html')
+            return
+        elif path_without_query == '/styles.css':
+            self.serve_file('styles.css', 'text/css')
+            return
+        elif path_without_query == '/script.js':
+            self.serve_file('script.js', 'application/javascript')
+            return
+        elif path_without_query == '/config.js':
+            self.serve_file('config.js', 'application/javascript')
+            return
+        elif path_without_query == '/script-simple.js':
+            self.serve_file('script-simple.js', 'application/javascript')
+            return
+        elif path_without_query == '/test.html':
+            self.serve_file('test.html', 'text/html')
+            return
+        elif path_without_query == '/favicon.ico':
+            self.send_response(204)  # No content
+            self.end_headers()
+            return
+        elif self.path.startswith('/api/'):
+            # The path is /api/conversations?... - we need to forward to labeling-g.turing.com/api/conversations
+            # Keep the full path as-is (including /api)
+            api_url = f'https://labeling-g.turing.com{self.path}'
             
             print(f"Proxying request to: {api_url}")
             
@@ -112,11 +138,34 @@ class ProxyHandler(BaseHTTPRequestHandler):
             self.end_headers()
             self.wfile.write(b'Not found. Use /api/ for API requests.')
 
+    def serve_file(self, filename, content_type):
+        """Serve static files from the current directory"""
+        import os
+        try:
+            filepath = os.path.join(os.path.dirname(__file__), filename)
+            with open(filepath, 'rb') as f:
+                content = f.read()
+            self.send_response(200)
+            self.send_header('Content-Type', content_type)
+            self.send_header('Content-Length', len(content))
+            # Disable caching for development
+            self.send_header('Cache-Control', 'no-cache, no-store, must-revalidate')
+            self.send_header('Pragma', 'no-cache')
+            self.send_header('Expires', '0')
+            self.end_headers()
+            self.wfile.write(content)
+        except FileNotFoundError:
+            self.send_response(404)
+            self.end_headers()
+            self.wfile.write(f'File not found: {filename}'.encode())
+
 if __name__ == '__main__':
     port = 3000
     server = HTTPServer(('localhost', port), ProxyHandler)
-    print(f'🚀 Local proxy server running on http://localhost:{port}')
-    print(f'📝 Open index.html in your browser')
+    print(f'🚀 Local server running on http://localhost:{port}')
+    print(f'')
+    print(f'📝 Open in your browser: http://localhost:{port}')
+    print(f'')
     print(f'🔗 API requests will be proxied through http://localhost:{port}/api/')
     print(f'Press Ctrl+C to stop')
     try:
