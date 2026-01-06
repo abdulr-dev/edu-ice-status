@@ -296,17 +296,32 @@ async function makeApiRequest(apiUrl) {
 
     // Try Vercel serverless function (for production)
     if (isVercel) {
-        const proxiedUrl = `/api/proxy?url=${encodeURIComponent(apiUrl)}`;
-        const response = await fetch(proxiedUrl, {
-            method: 'GET'
-        });
+        try {
+            const proxiedUrl = `/api/proxy?url=${encodeURIComponent(apiUrl)}`;
+            console.log('Trying Vercel proxy:', proxiedUrl);
+            const response = await fetch(proxiedUrl, {
+                method: 'GET',
+                headers: {
+                    'authorization': `Bearer ${AUTH_TOKEN}` // Pass token via header to Vercel proxy
+                }
+            });
 
-        if (!response.ok) {
-            const errorText = await response.text();
-            throw new Error(`HTTP error! status: ${response.status}, ${errorText}`);
+            if (!response.ok) {
+                const errorText = await response.text();
+                throw new Error(`Vercel proxy returned status ${response.status}: ${errorText.substring(0, 200)}`);
+            }
+            
+            const contentType = response.headers.get('content-type') || '';
+            if (contentType.includes('application/json')) {
+                return await response.json();
+            } else {
+                const text = await response.text();
+                throw new Error(`Vercel proxy returned non-JSON response. First 200 chars: ${text.substring(0, 200)}`);
+            }
+        } catch (vercelError) {
+            console.error('Vercel proxy error:', vercelError);
+            throw new Error(`Vercel proxy error: ${vercelError.message}. Make sure your Vercel serverless function is deployed correctly.`);
         }
-
-        return await response.json();
     }
 
     throw new Error('CORS proxy not available. For local development, run: python3 local-proxy.py');
@@ -412,17 +427,32 @@ async function fetchUnclaimedTasks() {
 
     // Try Vercel serverless function (for production)
     if (isVercel) {
-        const proxiedUrl = `/api/proxy?url=${encodeURIComponent(apiUrl)}`;
-        const response = await fetch(proxiedUrl, {
-            method: 'GET'
-        });
+        try {
+            const proxiedUrl = `/api/proxy?url=${encodeURIComponent(apiUrl)}`;
+            console.log('Trying Vercel proxy:', proxiedUrl);
+            const response = await fetch(proxiedUrl, {
+                method: 'GET',
+                headers: {
+                    'authorization': `Bearer ${AUTH_TOKEN}` // Pass token via header to Vercel proxy
+                }
+            });
 
-        if (!response.ok) {
-            const errorText = await response.text();
-            throw new Error(`HTTP error! status: ${response.status}, ${errorText}`);
+            if (!response.ok) {
+                const errorText = await response.text();
+                throw new Error(`Vercel proxy returned status ${response.status}: ${errorText.substring(0, 200)}`);
+            }
+            
+            const contentType = response.headers.get('content-type') || '';
+            if (contentType.includes('application/json')) {
+                return await response.json();
+            } else {
+                const text = await response.text();
+                throw new Error(`Vercel proxy returned non-JSON response. First 200 chars: ${text.substring(0, 200)}`);
+            }
+        } catch (vercelError) {
+            console.error('Vercel proxy error:', vercelError);
+            throw new Error(`Vercel proxy error: ${vercelError.message}. Make sure your Vercel serverless function is deployed correctly.`);
         }
-
-        return await response.json();
     }
 
     // No proxy available - show helpful error
