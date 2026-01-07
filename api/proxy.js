@@ -28,31 +28,9 @@ module.exports = async (req, res) => {
         // Decode the URL
         const apiUrl = decodeURIComponent(url);
         
-        // Get auth token - prefer environment variable (more secure), then fallback to header
+        // Get auth token from request header first, then environment variable, then default
         const authHeader = req.headers.authorization || req.headers.Authorization;
-        const headerToken = authHeader ? authHeader.replace('Bearer ', '') : null;
-        const envToken = process.env.AUTH_TOKEN;
-        
-        // Use env token if available, otherwise use header token
-        const AUTH_TOKEN = envToken || headerToken;
-        
-        // Debug logging (will show in Vercel logs)
-        console.log('Auth debug:', {
-            hasEnvToken: !!envToken,
-            hasHeaderToken: !!headerToken,
-            envTokenFirst10: envToken ? envToken.substring(0, 10) + '...' : 'none',
-            headerTokenFirst10: headerToken ? headerToken.substring(0, 10) + '...' : 'none',
-            usingToken: AUTH_TOKEN ? AUTH_TOKEN.substring(0, 10) + '...' : 'NONE'
-        });
-        
-        if (!AUTH_TOKEN) {
-            res.setHeader('Access-Control-Allow-Origin', '*');
-            return res.status(401).json({ 
-                error: 'No auth token available',
-                hasEnvToken: !!envToken,
-                hasHeaderToken: !!headerToken
-            });
-        }
+        const AUTH_TOKEN = authHeader ? authHeader.replace('Bearer ', '') : (process.env.AUTH_TOKEN || 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJlbWFpbCI6ImFiZHVsLnJAdHVyaW5nLmNvbSIsInN1YiI6OTk3LCJpYXQiOjE3Njc3MDc3NTYsImV4cCI6MTc2ODMxMjU1Nn0.bRF6Ph852jnKAgDBNbIBltJe-QWVid1Z-GKAS5E3_jQ');
 
         const response = await fetch(apiUrl, {
             method: 'GET',

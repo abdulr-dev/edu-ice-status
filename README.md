@@ -65,7 +65,7 @@ A beautiful web-based dashboard to track task status across different subjects.
    - Click "Settings" → "Environment Variables"
    - Click "Add New"
    - **Name**: `AUTH_TOKEN`
-   - **Value**: `eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJlbWFpbCI6ImFiZHVsLnJAdHVyaW5nLmNvbSIsInN1YiI6OTk3LCJpYXQiOjE3Njc3MDc3NTYsImV4cCI6MTc2ODMxMjU1Nn0.bRF6Ph852jnKAgDBNbIBltJe-QWVid1Z-GKAS5E3_jQ`
+   - **Value**: `token`
    - **Environment**: Select all (Production, Preview, Development)
    - Click "Save"
 
