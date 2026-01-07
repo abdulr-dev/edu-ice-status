@@ -18,7 +18,7 @@ module.exports = async (req, res) => {
     }
 
     const { url } = req.query;
-    
+
     if (!url) {
         res.setHeader('Access-Control-Allow-Origin', '*');
         return res.status(400).json({ error: 'Missing url parameter' });
@@ -27,7 +27,7 @@ module.exports = async (req, res) => {
     try {
         // Decode the URL
         const apiUrl = decodeURIComponent(url);
-        
+
         // Get auth token from request header first, then environment variable, then default
         const authHeader = req.headers.authorization || req.headers.Authorization;
         const AUTH_TOKEN = authHeader ? authHeader.replace('Bearer ', '') : (process.env.AUTH_TOKEN || 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJlbWFpbCI6ImFiZHVsLnJAdHVyaW5nLmNvbSIsInN1YiI6OTk3LCJpYXQiOjE3Njc3MDc3NTYsImV4cCI6MTc2ODMxMjU1Nn0.bRF6Ph852jnKAgDBNbIBltJe-QWVid1Z-GKAS5E3_jQ');
@@ -66,4 +66,3 @@ module.exports = async (req, res) => {
         return res.status(500).json({ error: error.message, type: error.name });
     }
 };
-

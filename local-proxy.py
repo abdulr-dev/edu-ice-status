@@ -16,7 +16,7 @@ import json
 import os
 
 # Try to read from environment variable first, then use default
-AUTH_TOKEN = os.environ.get('AUTH_TOKEN', 'your-token')
+AUTH_TOKEN = os.environ.get('AUTH_TOKEN', 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJlbWFpbCI6ImFiZHVsLnJAdHVyaW5nLmNvbSIsInN1YiI6OTk3LCJpYXQiOjE3Njc3MDc3NTYsImV4cCI6MTc2ODMxMjU1Nn0.bRF6Ph852jnKAgDBNbIBltJe-QWVid1Z-GKAS5E3_jQ')
 
 class ProxyHandler(BaseHTTPRequestHandler):
     def do_OPTIONS(self):
@@ -33,7 +33,7 @@ class ProxyHandler(BaseHTTPRequestHandler):
     def do_GET(self):
         # Strip query string for static file matching
         path_without_query = self.path.split('?')[0]
-        
+
         # Serve static files
         if path_without_query == '/' or path_without_query == '/index.html':
             self.serve_file('index.html', 'text/html')
@@ -61,15 +61,15 @@ class ProxyHandler(BaseHTTPRequestHandler):
             # The path is /api/conversations?... - we need to forward to labeling-g.turing.com/api/conversations
             # Keep the full path as-is (including /api)
             api_url = f'https://labeling-g.turing.com{self.path}'
-            
+
             print(f"Proxying request to: {api_url}")
-            
+
             try:
                 # Create SSL context that doesn't verify certificates (for local dev only)
                 ssl_context = ssl.create_default_context()
                 ssl_context.check_hostname = False
                 ssl_context.verify_mode = ssl.CERT_NONE
-                
+
                 # Create request with headers
                 req = urllib.request.Request(api_url)
                 req.add_header('authorization', f'Bearer {AUTH_TOKEN}')
@@ -79,13 +79,13 @@ class ProxyHandler(BaseHTTPRequestHandler):
                 req.add_header('sec-ch-ua-platform', '"macOS"')
                 req.add_header('DNT', '1')
                 req.add_header('x-app-version', '9c76935')
-                
+
                 # Make request with SSL context
                 with urllib.request.urlopen(req, timeout=30, context=ssl_context) as response:
                     data = response.read()
                     status_code = response.getcode()
                     content_type = response.headers.get('Content-Type', 'unknown')
-                    
+
                     # Log response info
                     print(f"API Response: {status_code}, Content-Type: {content_type}")
                     if status_code == 200:
@@ -95,7 +95,7 @@ class ProxyHandler(BaseHTTPRequestHandler):
                             print(f"Valid JSON response, data keys: {list(json_data.keys()) if isinstance(json_data, dict) else 'array'}")
                         except:
                             print(f"Warning: Response is not valid JSON. First 200 chars: {data[:200].decode('utf-8', errors='ignore')}")
-                    
+
                     self.send_response(status_code)
                     self.send_header('Access-Control-Allow-Origin', '*')
                     self.send_header('Access-Control-Allow-Methods', 'GET, POST, OPTIONS')
@@ -173,4 +173,3 @@ if __name__ == '__main__':
     except KeyboardInterrupt:
         print('\n👋 Server stopped')
         server.shutdown()
-
