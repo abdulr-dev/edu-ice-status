@@ -260,7 +260,6 @@ function displayTasks(tabName, tasks) {
                 
                 html += `<div class="formstage-card delivery-batch ${statusClass}">
                     <div class="formstage-status-badge">${statusLabel}</div>
-                    <div class="formstage-label">Batch Name</div>
                     <div class="formstage-name">${batchName}</div>
                     <div class="formstage-count">${count}</div>
                 </div>`;
