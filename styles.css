@@ -175,6 +175,97 @@ header h1 {
     min-height: 400px;
 }
 
+/* Tab summary pills */
+.tab-summary {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    justify-content: center;
+    gap: 10px;
+    margin-bottom: 16px;
+    padding: 0 10px;
+}
+
+.summary-pill {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    padding: 6px 12px;
+    border-radius: 20px;
+    font-size: 0.75rem;
+    border: 2px solid;
+    transition: all 0.2s ease;
+}
+
+.summary-pill .pill-label {
+    font-weight: 500;
+    max-width: 120px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.summary-pill .pill-count {
+    font-weight: 700;
+    font-size: 0.85rem;
+}
+
+/* Total pill - neutral dark */
+.summary-pill.summary-total-pill {
+    background: linear-gradient(135deg, #1e293b 0%, #334155 100%);
+    border-color: #1e293b;
+    color: #ffffff;
+}
+
+/* Codability pill - blue */
+.summary-pill.codability {
+    background: linear-gradient(135deg, #eff6ff 0%, #dbeafe 100%);
+    border-color: #3b82f6;
+    color: #1d4ed8;
+}
+
+/* Ground Truth pill - purple */
+.summary-pill.ground-truth {
+    background: linear-gradient(135deg, #faf5ff 0%, #f3e8ff 100%);
+    border-color: #a855f7;
+    color: #7c3aed;
+}
+
+/* Image Rubrics pill - amber */
+.summary-pill.image-rubrics {
+    background: linear-gradient(135deg, #fffbeb 0%, #fef3c7 100%);
+    border-color: #f59e0b;
+    color: #b45309;
+}
+
+/* No FormStage pill - gray */
+.summary-pill.no-formstage {
+    background: linear-gradient(135deg, #f8fafc 0%, #f1f5f9 100%);
+    border-color: #94a3b8;
+    color: #475569;
+}
+
+/* Improper pill - red */
+.summary-pill.improper {
+    background: linear-gradient(135deg, #fef2f2 0%, #fee2e2 100%);
+    border-color: #ef4444;
+    color: #dc2626;
+}
+
+/* Delivery ongoing pill - green */
+.summary-pill.delivery-ongoing {
+    background: linear-gradient(135deg, #f0fdf4 0%, #dcfce7 100%);
+    border-color: #22c55e;
+    color: #16a34a;
+}
+
+/* Delivery delivered pill - red */
+.summary-pill.delivery-delivered {
+    background: linear-gradient(135deg, #fef2f2 0%, #fee2e2 100%);
+    border-color: #ef4444;
+    color: #dc2626;
+}
+
 .subjects-container {
     display: flex;
     flex-wrap: wrap;

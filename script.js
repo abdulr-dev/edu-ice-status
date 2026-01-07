@@ -59,6 +59,7 @@ async function loadData(tabName) {
     
     const container = document.getElementById('subjects-' + tabName);
     const loading = document.getElementById('loading-' + tabName);
+    const summaryContainer = document.getElementById('summary-' + tabName);
     
     if (!container) {
         console.error('Container not found for tab:', tabName);
@@ -66,9 +67,10 @@ async function loadData(tabName) {
     }
     
     // Always fetch fresh data (no caching)
-    // Show loading
+    // Show loading and clear previous data
     if (loading) loading.style.display = 'block';
     container.innerHTML = '';
+    if (summaryContainer) summaryContainer.innerHTML = '';
     
     try {
         // Fetch all pages
@@ -229,9 +231,18 @@ function buildApiUrl(tabName, page) {
 
 function displayTasks(tabName, tasks) {
     const container = document.getElementById('subjects-' + tabName);
+    const summaryContainer = document.getElementById('summary-' + tabName);
     
     if (tasks.length === 0) {
         container.innerHTML = '<div class="empty-state"><div class="empty-state-icon">📭</div><div class="empty-state-text">No tasks found</div></div>';
+        // Clear summary when no tasks
+        if (summaryContainer) {
+            summaryContainer.innerHTML = `
+                <div class="summary-pill summary-total-pill">
+                    <span class="pill-label">Total</span>
+                    <span class="pill-count">0</span>
+                </div>`;
+        }
         return;
     }
     
@@ -239,7 +250,41 @@ function displayTasks(tabName, tasks) {
     if (tabName === 'delivery') {
         const grouped = groupTasksBySubjectAndDeliveryBatch(tasks);
         
+        // Calculate overall totals per batch status
+        let ongoingTotal = 0;
+        let deliveredTotal = 0;
+        let grandTotal = 0;
+        for (const deliveryBatches of Object.values(grouped)) {
+            for (const [batchKey, count] of Object.entries(deliveryBatches)) {
+                const [, batchStatus] = batchKey.split('|||');
+                if (batchStatus === 'ongoing') {
+                    ongoingTotal += count;
+                } else {
+                    deliveredTotal += count;
+                }
+                grandTotal += count;
+            }
+        }
+        
+        // Update summary pills (outside the main card)
+        if (summaryContainer) {
+            summaryContainer.innerHTML = `
+                <div class="summary-pill summary-total-pill">
+                    <span class="pill-label">Total</span>
+                    <span class="pill-count">${grandTotal}</span>
+                </div>
+                <div class="summary-pill delivery-ongoing">
+                    <span class="pill-label">Ongoing</span>
+                    <span class="pill-count">${ongoingTotal}</span>
+                </div>
+                <div class="summary-pill delivery-delivered">
+                    <span class="pill-label">Delivered</span>
+                    <span class="pill-count">${deliveredTotal}</span>
+                </div>`;
+        }
+        
         let html = '';
+        
         for (const [subject, deliveryBatches] of Object.entries(grouped)) {
             const totalCount = Object.values(deliveryBatches).reduce((sum, count) => sum + count, 0);
             const batchEntries = Object.entries(deliveryBatches);
@@ -275,7 +320,35 @@ function displayTasks(tabName, tasks) {
     // Group by subject and formStage
     const grouped = groupTasksBySubjectAndFormStage(tasks);
     
-    // Build HTML
+    // Calculate overall totals per formStage
+    const overallFormStageTotals = {};
+    let grandTotal = 0;
+    for (const formStages of Object.values(grouped)) {
+        for (const [formStage, count] of Object.entries(formStages)) {
+            overallFormStageTotals[formStage] = (overallFormStageTotals[formStage] || 0) + count;
+            grandTotal += count;
+        }
+    }
+    
+    // Update summary pills (outside the main card)
+    if (summaryContainer) {
+        let summaryHtml = `
+            <div class="summary-pill summary-total-pill">
+                <span class="pill-label">Total</span>
+                <span class="pill-count">${grandTotal}</span>
+            </div>`;
+        
+        for (const [formStage, count] of Object.entries(overallFormStageTotals)) {
+            const colorClass = tabName === 'improper' ? 'improper' : getFormStageColorClass(formStage);
+            summaryHtml += `<div class="summary-pill ${colorClass}">
+                <span class="pill-label">${formStage}</span>
+                <span class="pill-count">${count}</span>
+            </div>`;
+        }
+        summaryContainer.innerHTML = summaryHtml;
+    }
+    
+    // Build subject cards
     let html = '';
     for (const [subject, formStages] of Object.entries(grouped)) {
         const totalCount = Object.values(formStages).reduce((sum, count) => sum + count, 0);
