@@ -23,9 +23,6 @@ const TURING_API_BASE = CONFIG.API_BASE_URL || 'https://labeling-g.turing.com/ap
 // Known subjects
 const KNOWN_SUBJECTS = ['Maths', 'Physics', 'Biology', 'Chemistry', 'Hardware', 'Data Science'];
 
-// Cache for loaded data
-const dataCache = {};
-
 // Wait for DOM
 document.addEventListener('DOMContentLoaded', function() {
     console.log('=== DOM READY ===');
@@ -68,13 +65,7 @@ async function loadData(tabName) {
         return;
     }
     
-    // Check cache
-    if (dataCache[tabName]) {
-        console.log('Using cached data for:', tabName);
-        displayTasks(tabName, dataCache[tabName]);
-        return;
-    }
-    
+    // Always fetch fresh data (no caching)
     // Show loading
     if (loading) loading.style.display = 'block';
     container.innerHTML = '';
@@ -82,9 +73,6 @@ async function loadData(tabName) {
     try {
         // Fetch all pages
         const allTasks = await fetchAllPages(tabName);
-        
-        // Cache data
-        dataCache[tabName] = allTasks;
         
         // Hide loading
         if (loading) loading.style.display = 'none';
@@ -272,6 +260,7 @@ function displayTasks(tabName, tasks) {
                 
                 html += `<div class="formstage-card delivery-batch ${statusClass}">
                     <div class="formstage-status-badge">${statusLabel}</div>
+                    <div class="formstage-label">Batch Name</div>
                     <div class="formstage-name">${batchName}</div>
                     <div class="formstage-count">${count}</div>
                 </div>`;
