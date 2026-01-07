@@ -224,6 +224,21 @@ function buildApiUrl(tabName, page) {
         params.append('filter[3]', 'batch.status||$ne||archived');
         params.append('filter[4]', 'project.status||$ne||archived');
         params.append('filter[5]', 'projectId||$eq||' + PROJECT_ID);
+    } else if (tabName === 'trainer-stats') {
+        // Trainer stats - only fully completed tasks (reviewed + delivery)
+        // These are tasks with status=completed (covers both reviewed and in delivery batch)
+        params.append('join[0]', 'seed||metadata,turingMetadata');
+        params.append('join[1]', 'batch');
+        params.append('join[2]', 'project');
+        params.append('join[3]', 'currentUser||id,name,turingEmail,profilePicture');
+        params.append('join[4]', 'latestDeliveryBatch');
+        params.append('join[5]', 'latestDeliveryBatch.deliveryBatch||id,name,status');
+        params.append('filter[0]', 'status||$eq||completed');
+        params.append('filter[1]', 'currentUserId||$notnull');
+        params.append('filter[2]', 'projectId||$eq||' + PROJECT_ID);
+        params.append('filter[3]', 'batch.status||$ne||draft');
+        params.append('filter[4]', 'batch.status||$ne||archived');
+        params.append('filter[5]', 'project.status||$ne||archived');
     }
     
     return TURING_API_BASE + '?' + params.toString();
@@ -311,6 +326,181 @@ function displayTasks(tabName, tasks) {
             }
             
             html += `</div></div>`;
+        }
+        
+        container.innerHTML = html;
+        return;
+    }
+    
+    // For trainer stats tab, show trainer-wise breakdown
+    if (tabName === 'trainer-stats') {
+        const trainerStats = groupTasksByTrainer(tasks);
+        
+        // Calculate overall totals
+        let totalTasks = 0;
+        let totalMinutes = 0;
+        let totalReviewed = 0;
+        let totalInDelivery = 0;
+        let totalDelivered = 0;
+        const overallFormStages = {};
+        
+        for (const stats of Object.values(trainerStats)) {
+            totalTasks += stats.taskCount;
+            totalMinutes += stats.totalMinutes;
+            totalReviewed += stats.reviewed;
+            totalInDelivery += stats.inDelivery;
+            totalDelivered += stats.delivered;
+            
+            // Aggregate formStage data
+            for (const [formStage, fsData] of Object.entries(stats.formStages)) {
+                if (!overallFormStages[formStage]) {
+                    overallFormStages[formStage] = { count: 0, minutes: 0 };
+                }
+                overallFormStages[formStage].count += fsData.count;
+                overallFormStages[formStage].minutes += fsData.minutes;
+            }
+        }
+        
+        const totalAHT = totalTasks > 0 ? Math.round(totalMinutes / totalTasks) : 0;
+        
+        // Build formStage AHT pills
+        let formStageAhtHtml = '';
+        const sortedOverallFormStages = Object.entries(overallFormStages).sort((a, b) => b[1].count - a[1].count);
+        for (const [formStage, fsData] of sortedOverallFormStages) {
+            const fsAht = fsData.count > 0 ? Math.round(fsData.minutes / fsData.count) : 0;
+            const colorClass = getFormStageColorClass(formStage);
+            formStageAhtHtml += `
+                <div class="summary-pill formstage-aht-pill ${colorClass}" title="${formStage}: ${fsData.count} tasks, ${formatMinutes(fsData.minutes)} total">
+                    <span class="pill-label">${formStage}</span>
+                    <span class="pill-count">${fsData.count}</span>
+                    <span class="pill-aht">${fsAht}m</span>
+                </div>`;
+        }
+        
+        // Update summary pills
+        if (summaryContainer) {
+            summaryContainer.innerHTML = `
+                <div class="summary-row summary-main">
+                    <div class="summary-pill summary-total-pill">
+                        <span class="pill-label">Submissions</span>
+                        <span class="pill-count">${totalTasks}</span>
+                    </div>
+                    <div class="summary-pill trainer-reviewed">
+                        <span class="pill-label">Reviewed</span>
+                        <span class="pill-count">${totalReviewed}</span>
+                    </div>
+                    <div class="summary-pill trainer-indelivery">
+                        <span class="pill-label">In Delivery</span>
+                        <span class="pill-count">${totalInDelivery}</span>
+                    </div>
+                    <div class="summary-pill trainer-delivered">
+                        <span class="pill-label">Delivered</span>
+                        <span class="pill-count">${totalDelivered}</span>
+                    </div>
+                    <div class="summary-pill trainer-time">
+                        <span class="pill-label">Total Time</span>
+                        <span class="pill-count">${formatMinutes(totalMinutes)}</span>
+                    </div>
+                    <div class="summary-pill trainer-aht">
+                        <span class="pill-label">Avg AHT</span>
+                        <span class="pill-count">${totalAHT}m</span>
+                    </div>
+                </div>
+                <div class="summary-row summary-formstages">
+                    <span class="summary-row-label">AHT by Form Stage:</span>
+                    ${formStageAhtHtml}
+                </div>
+                <div class="trainer-controls">
+                    <div class="search-box">
+                        <input type="text" id="trainer-search" placeholder="🔍 Search trainer by name..." oninput="filterTrainers()">
+                    </div>
+                    <div class="sort-controls">
+                        <span class="sort-label">Sort by:</span>
+                        <select id="trainer-sort" onchange="sortTrainers()">
+                            <option value="tasks-desc">Tasks (High → Low)</option>
+                            <option value="tasks-asc">Tasks (Low → High)</option>
+                            <option value="aht-desc">AHT (High → Low)</option>
+                            <option value="aht-asc">AHT (Low → High)</option>
+                            <option value="time-desc">Time (High → Low)</option>
+                            <option value="name-asc">Name (A → Z)</option>
+                        </select>
+                    </div>
+                </div>`;
+        }
+        
+        // Store trainer stats globally for filtering/sorting
+        window.currentTrainerStats = trainerStats;
+        
+        // Sort trainers by task count (descending) - default
+        const sortedTrainers = Object.entries(trainerStats).sort((a, b) => b[1].taskCount - a[1].taskCount);
+        
+        let html = '';
+        
+        for (const [trainerName, stats] of sortedTrainers) {
+            const aht = stats.taskCount > 0 ? Math.round(stats.totalMinutes / stats.taskCount) : 0;
+            
+            html += `<div class="subject-card trainer-card">
+                <div class="subject-header">
+                    <div class="trainer-info">
+                        ${stats.profilePicture ? `<img src="${stats.profilePicture}" class="trainer-avatar" alt="${trainerName}">` : '<div class="trainer-avatar-placeholder">👤</div>'}
+                        <div class="trainer-name">${trainerName}</div>
+                    </div>
+                    <div class="subject-count">${stats.taskCount} submissions</div>
+                </div>
+                <div class="trainer-status-row">
+                    <div class="status-badge status-reviewed" title="Reviewed: Completed tasks awaiting delivery">📋 ${stats.reviewed}</div>
+                    <div class="status-badge status-indelivery" title="In Delivery: Tasks in ongoing delivery batch">📦 ${stats.inDelivery}</div>
+                    <div class="status-badge status-delivered" title="Delivered: Tasks successfully delivered to client">✅ ${stats.delivered}</div>
+                </div>
+                <div class="trainer-stats-grid">
+                    <div class="trainer-stat-card stat-time">
+                        <div class="stat-label">Total Time</div>
+                        <div class="stat-value">${formatMinutes(stats.totalMinutes)}</div>
+                    </div>
+                    <div class="trainer-stat-card stat-aht">
+                        <div class="stat-label">Avg AHT</div>
+                        <div class="stat-value">${aht}m</div>
+                    </div>
+                </div>
+                <div class="trainer-breakdown">
+                    <div class="trainer-section">
+                        <div class="trainer-section-title">By Form Stage:</div>
+                        <div class="trainer-formstage-grid">`;
+            
+            // Sort formStages by count
+            const sortedFormStages = Object.entries(stats.formStages).sort((a, b) => b[1].count - a[1].count);
+            
+            for (const [formStage, fsStats] of sortedFormStages) {
+                const fsAht = fsStats.count > 0 ? Math.round(fsStats.minutes / fsStats.count) : 0;
+                const colorClass = getFormStageColorClass(formStage);
+                html += `<div class="trainer-formstage-item ${colorClass}">
+                    <span class="trainer-formstage-name">${formStage}</span>
+                    <span class="trainer-formstage-count">${fsStats.count}</span>
+                    <span class="trainer-formstage-time">${formatMinutes(fsStats.minutes)}</span>
+                    <span class="trainer-formstage-aht">${fsAht}m</span>
+                </div>`;
+            }
+            
+            html += `</div></div>
+                    <div class="trainer-section">
+                        <div class="trainer-section-title">By Subject:</div>
+                        <div class="trainer-subject-grid">`;
+            
+            // Sort subjects by count
+            const sortedSubjects = Object.entries(stats.subjects).sort((a, b) => b[1].count - a[1].count);
+            
+            for (const [subject, subjectStats] of sortedSubjects) {
+                const subjectAht = subjectStats.count > 0 ? Math.round(subjectStats.minutes / subjectStats.count) : 0;
+                const deliveredBadge = subjectStats.delivered > 0 ? `<span class="delivered-indicator" title="${subjectStats.delivered} tasks delivered">✅${subjectStats.delivered}</span>` : '';
+                html += `<div class="trainer-subject-item">
+                    <span class="trainer-subject-name">${subject}</span>
+                    <span class="trainer-subject-count">${subjectStats.count} ${deliveredBadge}</span>
+                    <span class="trainer-subject-time">${formatMinutes(subjectStats.minutes)}</span>
+                    <span class="trainer-subject-aht">${subjectAht}m</span>
+                </div>`;
+            }
+            
+            html += `</div></div></div></div>`;
         }
         
         container.innerHTML = html;
@@ -555,6 +745,259 @@ function getFormStageColorClass(formStage) {
     if (lower.includes('ground truth')) return 'ground-truth';
     if (lower.includes('image rubrics') || lower.includes('gemini')) return 'image-rubrics';
     return 'no-formstage';
+}
+
+function formatMinutes(minutes) {
+    if (minutes < 60) return `${minutes}m`;
+    const hours = Math.floor(minutes / 60);
+    const mins = minutes % 60;
+    if (hours < 24) return `${hours}h ${mins}m`;
+    const days = Math.floor(hours / 24);
+    const remainingHours = hours % 24;
+    return `${days}d ${remainingHours}h`;
+}
+
+function groupTasksByTrainer(tasks) {
+    const trainers = {};
+    
+    tasks.forEach(task => {
+        // Get trainer info
+        const currentUser = task.currentUser;
+        if (!currentUser) return;
+        
+        const trainerName = currentUser.name || 'Unknown Trainer';
+        const trainerId = currentUser.id;
+        const profilePicture = currentUser.profilePicture || null;
+        
+        // Get time spent (durationMinutes)
+        const durationMinutes = task.durationMinutes || 0;
+        
+        // Check if task is in delivery batch
+        const deliveryBatch = task.latestDeliveryBatch?.deliveryBatch;
+        const isDelivered = deliveryBatch && deliveryBatch.status === 'delivered';
+        const isInDelivery = deliveryBatch && deliveryBatch.status === 'ongoing';
+        const isReviewed = !deliveryBatch; // Not in delivery batch = just reviewed
+        
+        // Extract subject
+        let subject = 'Unknown';
+        if (task.seed) {
+            const metadata = task.seed.metadata || {};
+            const turingMetadata = task.seed.turingMetadata || {};
+            subject = metadata.Subject || metadata.subject || 
+                      turingMetadata.Subject || turingMetadata.subject || 'Unknown';
+        }
+        subject = normalizeSubject(subject);
+        
+        // Get formStage
+        let formStage = task.formStage || 'No FormStage';
+        formStage = normalizeFormStage(formStage);
+        
+        // Initialize trainer entry
+        if (!trainers[trainerName]) {
+            trainers[trainerName] = {
+                id: trainerId,
+                profilePicture: profilePicture,
+                taskCount: 0,
+                totalMinutes: 0,
+                reviewed: 0,      // Completed but not in delivery
+                inDelivery: 0,    // In ongoing delivery batch
+                delivered: 0,     // In delivered batch
+                subjects: {},
+                formStages: {}    // Track by form stage
+            };
+        }
+        
+        // Update counts
+        trainers[trainerName].taskCount++;
+        trainers[trainerName].totalMinutes += durationMinutes;
+        
+        // Track by delivery status
+        if (isDelivered) {
+            trainers[trainerName].delivered++;
+        } else if (isInDelivery) {
+            trainers[trainerName].inDelivery++;
+        } else {
+            trainers[trainerName].reviewed++;
+        }
+        
+        // Track by formStage
+        if (!trainers[trainerName].formStages[formStage]) {
+            trainers[trainerName].formStages[formStage] = {
+                count: 0,
+                minutes: 0
+            };
+        }
+        trainers[trainerName].formStages[formStage].count++;
+        trainers[trainerName].formStages[formStage].minutes += durationMinutes;
+        
+        // Track by subject
+        if (!trainers[trainerName].subjects[subject]) {
+            trainers[trainerName].subjects[subject] = {
+                count: 0,
+                minutes: 0,
+                reviewed: 0,
+                inDelivery: 0,
+                delivered: 0,
+                formStages: {}   // Track formStages within subject
+            };
+        }
+        trainers[trainerName].subjects[subject].count++;
+        trainers[trainerName].subjects[subject].minutes += durationMinutes;
+        if (isDelivered) {
+            trainers[trainerName].subjects[subject].delivered++;
+        } else if (isInDelivery) {
+            trainers[trainerName].subjects[subject].inDelivery++;
+        } else {
+            trainers[trainerName].subjects[subject].reviewed++;
+        }
+        
+        // Track formStage within subject
+        if (!trainers[trainerName].subjects[subject].formStages[formStage]) {
+            trainers[trainerName].subjects[subject].formStages[formStage] = {
+                count: 0,
+                minutes: 0
+            };
+        }
+        trainers[trainerName].subjects[subject].formStages[formStage].count++;
+        trainers[trainerName].subjects[subject].formStages[formStage].minutes += durationMinutes;
+    });
+    
+    return trainers;
+}
+
+// Filter trainers by search term
+function filterTrainers() {
+    const searchTerm = document.getElementById('trainer-search')?.value?.toLowerCase() || '';
+    const sortValue = document.getElementById('trainer-sort')?.value || 'tasks-desc';
+    
+    if (!window.currentTrainerStats) return;
+    
+    // Filter
+    let filtered = Object.entries(window.currentTrainerStats);
+    if (searchTerm) {
+        filtered = filtered.filter(([name]) => name.toLowerCase().includes(searchTerm));
+    }
+    
+    // Sort
+    filtered = applySorting(filtered, sortValue);
+    
+    // Render
+    renderTrainerCards(filtered);
+}
+
+// Sort trainers
+function sortTrainers() {
+    filterTrainers(); // Re-filter with new sort
+}
+
+// Apply sorting to trainer entries
+function applySorting(entries, sortValue) {
+    switch (sortValue) {
+        case 'tasks-desc':
+            return entries.sort((a, b) => b[1].taskCount - a[1].taskCount);
+        case 'tasks-asc':
+            return entries.sort((a, b) => a[1].taskCount - b[1].taskCount);
+        case 'aht-desc':
+            return entries.sort((a, b) => {
+                const ahtA = a[1].taskCount > 0 ? a[1].totalMinutes / a[1].taskCount : 0;
+                const ahtB = b[1].taskCount > 0 ? b[1].totalMinutes / b[1].taskCount : 0;
+                return ahtB - ahtA;
+            });
+        case 'aht-asc':
+            return entries.sort((a, b) => {
+                const ahtA = a[1].taskCount > 0 ? a[1].totalMinutes / a[1].taskCount : 0;
+                const ahtB = b[1].taskCount > 0 ? b[1].totalMinutes / b[1].taskCount : 0;
+                return ahtA - ahtB;
+            });
+        case 'time-desc':
+            return entries.sort((a, b) => b[1].totalMinutes - a[1].totalMinutes);
+        case 'name-asc':
+            return entries.sort((a, b) => a[0].localeCompare(b[0]));
+        default:
+            return entries;
+    }
+}
+
+// Render trainer cards
+function renderTrainerCards(trainersArray) {
+    const container = document.getElementById('subjects-trainer-stats');
+    if (!container) return;
+    
+    if (trainersArray.length === 0) {
+        container.innerHTML = '<div class="empty-state"><div class="empty-state-icon">🔍</div><div class="empty-state-text">No trainers found</div></div>';
+        return;
+    }
+    
+    let html = '';
+    
+    for (const [trainerName, stats] of trainersArray) {
+        const aht = stats.taskCount > 0 ? Math.round(stats.totalMinutes / stats.taskCount) : 0;
+        
+        html += `<div class="subject-card trainer-card">
+            <div class="subject-header">
+                <div class="trainer-info">
+                    ${stats.profilePicture ? `<img src="${stats.profilePicture}" class="trainer-avatar" alt="${trainerName}">` : '<div class="trainer-avatar-placeholder">👤</div>'}
+                    <div class="trainer-name">${trainerName}</div>
+                </div>
+                <div class="subject-count">${stats.taskCount} submissions</div>
+            </div>
+            <div class="trainer-status-row">
+                <div class="status-badge status-reviewed" title="Reviewed: Completed tasks awaiting delivery">📋 ${stats.reviewed}</div>
+                <div class="status-badge status-indelivery" title="In Delivery: Tasks in ongoing delivery batch">📦 ${stats.inDelivery}</div>
+                <div class="status-badge status-delivered" title="Delivered: Tasks successfully delivered to client">✅ ${stats.delivered}</div>
+            </div>
+            <div class="trainer-stats-grid">
+                <div class="trainer-stat-card stat-time">
+                    <div class="stat-label">Total Time</div>
+                    <div class="stat-value">${formatMinutes(stats.totalMinutes)}</div>
+                </div>
+                <div class="trainer-stat-card stat-aht">
+                    <div class="stat-label">Avg AHT</div>
+                    <div class="stat-value">${aht}m</div>
+                </div>
+            </div>
+            <div class="trainer-breakdown">
+                <div class="trainer-section">
+                    <div class="trainer-section-title">By Form Stage:</div>
+                    <div class="trainer-formstage-grid">`;
+        
+        // Sort formStages by count
+        const sortedFormStages = Object.entries(stats.formStages).sort((a, b) => b[1].count - a[1].count);
+        
+        for (const [formStage, fsStats] of sortedFormStages) {
+            const fsAht = fsStats.count > 0 ? Math.round(fsStats.minutes / fsStats.count) : 0;
+            const colorClass = getFormStageColorClass(formStage);
+            html += `<div class="trainer-formstage-item ${colorClass}">
+                <span class="trainer-formstage-name">${formStage}</span>
+                <span class="trainer-formstage-count">${fsStats.count}</span>
+                <span class="trainer-formstage-time">${formatMinutes(fsStats.minutes)}</span>
+                <span class="trainer-formstage-aht">${fsAht}m</span>
+            </div>`;
+        }
+        
+        html += `</div></div>
+                <div class="trainer-section">
+                    <div class="trainer-section-title">By Subject:</div>
+                    <div class="trainer-subject-grid">`;
+        
+        // Sort subjects by count
+        const sortedSubjects = Object.entries(stats.subjects).sort((a, b) => b[1].count - a[1].count);
+        
+        for (const [subject, subjectStats] of sortedSubjects) {
+            const subjectAht = subjectStats.count > 0 ? Math.round(subjectStats.minutes / subjectStats.count) : 0;
+            const deliveredBadge = subjectStats.delivered > 0 ? `<span class="delivered-indicator" title="${subjectStats.delivered} tasks delivered">✅${subjectStats.delivered}</span>` : '';
+            html += `<div class="trainer-subject-item">
+                <span class="trainer-subject-name">${subject}</span>
+                <span class="trainer-subject-count">${subjectStats.count} ${deliveredBadge}</span>
+                <span class="trainer-subject-time">${formatMinutes(subjectStats.minutes)}</span>
+                <span class="trainer-subject-aht">${subjectAht}m</span>
+            </div>`;
+        }
+        
+        html += `</div></div></div></div>`;
+    }
+    
+    container.innerHTML = html;
 }
 
 console.log('=== DASHBOARD SCRIPT READY ===');

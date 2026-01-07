@@ -667,6 +667,503 @@ header h1 {
     color: #ffffff;
 }
 
+/* Trainer Stats Styles */
+.trainer-card {
+    width: 380px;
+    min-height: auto;
+    overflow: visible; /* Override to show tooltips */
+}
+
+.trainer-status-row {
+    position: relative;
+    z-index: 10;
+}
+
+.trainer-card .subject-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 16px;
+    padding-bottom: 12px;
+    border-bottom: 1px solid #e5e7eb;
+}
+
+.trainer-info {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+}
+
+.trainer-avatar {
+    width: 40px;
+    height: 40px;
+    border-radius: 50%;
+    object-fit: cover;
+    border: 2px solid #e5e7eb;
+}
+
+.trainer-avatar-placeholder {
+    width: 40px;
+    height: 40px;
+    border-radius: 50%;
+    background: linear-gradient(135deg, #e5e7eb, #d1d5db);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 1.2rem;
+}
+
+.trainer-name {
+    font-weight: 600;
+    font-size: 1rem;
+    color: #1f2937;
+    max-width: 180px;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.trainer-stats-grid {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 10px;
+    margin-bottom: 16px;
+}
+
+.trainer-stat-card {
+    padding: 12px;
+    border-radius: 10px;
+    text-align: center;
+}
+
+.trainer-stat-card.stat-time {
+    background: linear-gradient(135deg, #dbeafe, #bfdbfe);
+    border: 1px solid #93c5fd;
+}
+
+.trainer-stat-card.stat-aht {
+    background: linear-gradient(135deg, #fef3c7, #fde68a);
+    border: 1px solid #fcd34d;
+}
+
+.stat-label {
+    font-size: 0.7rem;
+    font-weight: 500;
+    color: #6b7280;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    margin-bottom: 4px;
+}
+
+.stat-value {
+    font-size: 1.1rem;
+    font-weight: 700;
+    color: #1f2937;
+}
+
+.trainer-breakdown {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+}
+
+.trainer-section {
+    background: #f9fafb;
+    border-radius: 10px;
+    padding: 12px;
+}
+
+.trainer-section-title {
+    font-size: 0.75rem;
+    font-weight: 600;
+    color: #6b7280;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    margin-bottom: 10px;
+}
+
+/* Form Stage Grid in Trainer Card */
+.trainer-formstage-grid {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+}
+
+.trainer-formstage-item {
+    display: grid;
+    grid-template-columns: 1fr auto auto auto;
+    gap: 8px;
+    align-items: center;
+    padding: 6px 10px;
+    border-radius: 6px;
+    font-size: 0.8rem;
+    border-left: 3px solid;
+}
+
+.trainer-formstage-item.codability {
+    background: linear-gradient(90deg, #dbeafe 0%, #f9fafb 100%);
+    border-left-color: #3b82f6;
+}
+
+.trainer-formstage-item.ground-truth {
+    background: linear-gradient(90deg, #f3e8ff 0%, #f9fafb 100%);
+    border-left-color: #9333ea;
+}
+
+.trainer-formstage-item.image-rubrics {
+    background: linear-gradient(90deg, #fef3c7 0%, #f9fafb 100%);
+    border-left-color: #f59e0b;
+}
+
+.trainer-formstage-item.no-formstage {
+    background: linear-gradient(90deg, #f3f4f6 0%, #f9fafb 100%);
+    border-left-color: #9ca3af;
+}
+
+.trainer-formstage-name {
+    font-weight: 600;
+    color: #374151;
+}
+
+.trainer-formstage-count {
+    background: rgba(0,0,0,0.1);
+    color: #374151;
+    padding: 2px 8px;
+    border-radius: 10px;
+    font-weight: 700;
+    font-size: 0.7rem;
+}
+
+.trainer-formstage-time {
+    color: #3b82f6;
+    font-weight: 600;
+    font-size: 0.7rem;
+}
+
+.trainer-formstage-aht {
+    color: #f59e0b;
+    font-weight: 600;
+    font-size: 0.7rem;
+}
+
+/* Subject Grid in Trainer Card */
+.trainer-subjects {
+    background: #f9fafb;
+    border-radius: 10px;
+    padding: 12px;
+}
+
+.trainer-subjects-title {
+    font-size: 0.75rem;
+    font-weight: 600;
+    color: #6b7280;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    margin-bottom: 10px;
+}
+
+.trainer-subject-grid {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+}
+
+.trainer-subject-item {
+    display: grid;
+    grid-template-columns: 1fr auto auto auto;
+    gap: 8px;
+    align-items: center;
+    padding: 6px 8px;
+    background: white;
+    border-radius: 6px;
+    font-size: 0.8rem;
+}
+
+.trainer-subject-name {
+    font-weight: 500;
+    color: #374151;
+}
+
+.trainer-subject-count {
+    background: #e5e7eb;
+    color: #4b5563;
+    padding: 2px 8px;
+    border-radius: 10px;
+    font-weight: 600;
+    font-size: 0.7rem;
+}
+
+.trainer-subject-time {
+    color: #3b82f6;
+    font-weight: 600;
+    font-size: 0.7rem;
+}
+
+.trainer-subject-aht {
+    color: #f59e0b;
+    font-weight: 600;
+    font-size: 0.7rem;
+}
+
+/* Trainer summary pills */
+.summary-pill.trainer-time {
+    background: linear-gradient(135deg, #3b82f6, #2563eb);
+}
+
+.summary-pill.trainer-aht {
+    background: linear-gradient(135deg, #f59e0b, #d97706);
+}
+
+.summary-pill.trainer-count {
+    background: linear-gradient(135deg, #8b5cf6, #7c3aed);
+}
+
+.summary-pill.trainer-reviewed {
+    background: linear-gradient(135deg, #8b5cf6, #7c3aed);
+}
+
+.summary-pill.trainer-indelivery {
+    background: linear-gradient(135deg, #f59e0b, #d97706);
+}
+
+.summary-pill.trainer-delivered {
+    background: linear-gradient(135deg, #22c55e, #16a34a);
+}
+
+/* Summary rows for trainer stats */
+.summary-row {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    align-items: center;
+    justify-content: center;
+}
+
+.summary-row.summary-main {
+    margin-bottom: 12px;
+}
+
+.summary-row.summary-formstages {
+    padding: 12px 16px;
+    background: rgba(255,255,255,0.6);
+    border-radius: 12px;
+    border: 1px solid #e5e7eb;
+}
+
+.summary-row-label {
+    font-size: 0.75rem;
+    font-weight: 600;
+    color: #6b7280;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    margin-right: 8px;
+}
+
+/* Trainer controls - search and sort */
+.trainer-controls {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 16px;
+    align-items: center;
+    justify-content: center;
+    margin-top: 16px;
+    padding: 16px;
+    background: rgba(255,255,255,0.8);
+    border-radius: 12px;
+    border: 1px solid #e5e7eb;
+}
+
+.search-box {
+    flex: 1;
+    min-width: 200px;
+    max-width: 350px;
+}
+
+.search-box input {
+    width: 100%;
+    padding: 10px 16px;
+    border: 2px solid #e5e7eb;
+    border-radius: 10px;
+    font-size: 0.9rem;
+    transition: all 0.2s ease;
+    background: white;
+}
+
+.search-box input:focus {
+    outline: none;
+    border-color: #667eea;
+    box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
+}
+
+.search-box input::placeholder {
+    color: #9ca3af;
+}
+
+.sort-controls {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+
+.sort-label {
+    font-size: 0.8rem;
+    font-weight: 600;
+    color: #6b7280;
+}
+
+.sort-controls select {
+    padding: 10px 16px;
+    border: 2px solid #e5e7eb;
+    border-radius: 10px;
+    font-size: 0.85rem;
+    font-weight: 500;
+    background: white;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    min-width: 180px;
+}
+
+.sort-controls select:focus {
+    outline: none;
+    border-color: #667eea;
+    box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
+}
+
+.sort-controls select:hover {
+    border-color: #667eea;
+}
+
+/* FormStage AHT Pills */
+.formstage-aht-pill {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    padding: 6px 12px;
+    border-radius: 20px;
+    font-size: 0.75rem;
+    cursor: help;
+}
+
+.formstage-aht-pill.codability {
+    background: linear-gradient(135deg, #3b82f6, #2563eb);
+    color: white;
+}
+
+.formstage-aht-pill.ground-truth {
+    background: linear-gradient(135deg, #9333ea, #7c3aed);
+    color: white;
+}
+
+.formstage-aht-pill.image-rubrics {
+    background: linear-gradient(135deg, #f59e0b, #d97706);
+    color: white;
+}
+
+.formstage-aht-pill.no-formstage {
+    background: linear-gradient(135deg, #6b7280, #4b5563);
+    color: white;
+}
+
+.formstage-aht-pill .pill-label {
+    font-weight: 600;
+}
+
+.formstage-aht-pill .pill-count {
+    background: rgba(255,255,255,0.25);
+    padding: 2px 6px;
+    border-radius: 8px;
+    font-weight: 700;
+}
+
+.formstage-aht-pill .pill-aht {
+    background: rgba(0,0,0,0.2);
+    padding: 2px 6px;
+    border-radius: 8px;
+    font-weight: 700;
+}
+
+/* Trainer status row */
+.trainer-status-row {
+    display: flex;
+    gap: 8px;
+    margin-bottom: 12px;
+    flex-wrap: wrap;
+}
+
+.status-badge {
+    padding: 4px 10px;
+    border-radius: 12px;
+    font-size: 0.75rem;
+    font-weight: 600;
+    display: flex;
+    align-items: center;
+    gap: 4px;
+}
+
+.status-badge.status-reviewed {
+    background: #ede9fe;
+    color: #7c3aed;
+    border: 1px solid #c4b5fd;
+    cursor: help;
+    position: relative;
+}
+
+.status-badge.status-indelivery {
+    background: #fef3c7;
+    color: #d97706;
+    border: 1px solid #fcd34d;
+    cursor: help;
+    position: relative;
+}
+
+.status-badge.status-delivered {
+    background: #dcfce7;
+    color: #16a34a;
+    border: 1px solid #86efac;
+    cursor: help;
+    position: relative;
+}
+
+/* Custom tooltip styling */
+.status-badge[title]:hover::after {
+    content: attr(title);
+    position: absolute;
+    bottom: 100%;
+    left: 50%;
+    transform: translateX(-50%);
+    background: #1f2937;
+    color: white;
+    padding: 8px 12px;
+    border-radius: 8px;
+    font-size: 0.75rem;
+    white-space: nowrap;
+    z-index: 9999;
+    margin-bottom: 8px;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+    pointer-events: none;
+}
+
+.status-badge[title]:hover::before {
+    content: '';
+    position: absolute;
+    bottom: 100%;
+    left: 50%;
+    transform: translateX(-50%);
+    border: 8px solid transparent;
+    border-top-color: #1f2937;
+    margin-bottom: -8px;
+    z-index: 9999;
+    pointer-events: none;
+}
+
+.delivered-indicator {
+    color: #16a34a;
+    font-size: 0.65rem;
+    font-weight: 700;
+    margin-left: 4px;
+    cursor: help;
+}
+
 @media (max-width: 768px) {
     body {
         padding: 12px;
@@ -700,5 +1197,10 @@ header h1 {
 
     .tab-content {
         padding: 20px;
+    }
+
+    .trainer-card {
+        width: 100%;
+        max-width: 360px;
     }
 }
