@@ -173,7 +173,10 @@ function updateSidebar(breakdown, tabName) {
     } else {
         sidebar.classList.remove('hidden');
         // Keep sidebar closed by default - user can open it with button
-        // Don't change open/collapsed state, just make sure it's not hidden
+        // Ensure it stays collapsed unless user explicitly opens it
+        if (!sidebar.classList.contains('open')) {
+            sidebar.classList.add('collapsed');
+        }
         container.classList.add('with-sidebar');
         container.classList.remove('sidebar-collapsed');
         if (toggleBtn) toggleBtn.style.display = 'flex';

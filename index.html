@@ -1,26 +1,26 @@
-\<!DOCTYPE html>
+<!DOCTYPE html>
 <html lang="en">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Edu-ICE Status Dashboard</title>
-    <link rel="stylesheet" href="styles.css?v=21">
+    <link rel="stylesheet" href="styles.css?v=22">
 </head>
 <body>
-    <!-- Fixed Sidebar -->
-    <aside class="breakdown-sidebar" id="breakdown-sidebar">
+    <!-- Fixed Sidebar (starts hidden and collapsed) -->
+    <aside class="breakdown-sidebar collapsed hidden" id="breakdown-sidebar">
         <div class="sidebar-placeholder">
             <div class="sidebar-loading">📊 Loading breakdown...</div>
         </div>
     </aside>
     
-    <!-- Toggle button for sidebar (right side) -->
-    <button class="sidebar-toggle" id="sidebar-toggle" onclick="toggleSidebar()" title="Open Task Breakdown">
+    <!-- Toggle button for sidebar (right side, starts hidden) -->
+    <button class="sidebar-toggle hidden" id="sidebar-toggle" onclick="toggleSidebar()" title="Open Task Breakdown" style="display: none;">
         <span class="toggle-icon">📊</span>
         <span class="toggle-text">Details</span>
     </button>
     
-    <div class="container with-sidebar">
+    <div class="container">
         <header>
             <h1>📊 Edu-ICE Status Dashboard</h1>
         </header>
@@ -125,8 +125,8 @@
         </div>
     </div>
 
-    <script src="config.js?v=21"></script>
-    <script src="script.js?v=21"></script>
+    <script src="config.js?v=22"></script>
+    <script src="script.js?v=22"></script>
 </body>
 </html>
 
