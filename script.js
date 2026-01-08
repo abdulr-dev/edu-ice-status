@@ -23,6 +23,326 @@ const TURING_API_BASE = CONFIG.API_BASE_URL || 'https://labeling-g.turing.com/ap
 // Known subjects
 const KNOWN_SUBJECTS = ['Maths', 'Physics', 'Biology', 'Chemistry', 'Hardware', 'Data Science'];
 
+// Role assignment based on workflow
+// Returns specific role: 'code-trainer', 'code-reviewer', 'stem-tasker', 'stem-reviewer'
+function getResponsibleRole(formStage, tabName) {
+    const stage = normalizeFormStage(formStage);
+    
+    // Based on the workflow sheet:
+    // Form Stage | Status on LT | To be picked up by
+    
+    if (stage === 'Codability') {
+        if (tabName === 'unclaimed') return 'code-trainer';      // Unclaimed → Code Trainer
+        if (tabName === 'pending-review') return 'code-reviewer'; // Pending Review → Code Reviewer
+        if (tabName === 'rework') return 'code-trainer';          // Rework → Code Trainer
+        if (tabName === 'reviewed') return 'stem-tasker';         // Reviewed → STEM Tasker claims it
+        if (tabName === 'inprogress') return 'code-trainer';      // In progress = being worked on
+    }
+    
+    if (stage === 'Image Rubrics and Gemini') {
+        if (tabName === 'pending-review') return 'stem-reviewer'; // Pending Review → STEM Reviewer
+        if (tabName === 'rework') return 'stem-tasker';           // Rework → STEM Tasker
+        if (tabName === 'reviewed') return 'code-trainer';        // Reviewed → Code Trainer claims Ground Truth
+        if (tabName === 'inprogress') return 'stem-tasker';       // In progress = being worked on
+    }
+    
+    if (stage === 'Ground Truth and ICE') {
+        if (tabName === 'pending-review') return 'code-reviewer'; // Pending Review → Code Reviewer
+        if (tabName === 'rework') return 'code-trainer';          // Rework → Code Trainer
+        if (tabName === 'reviewed') return 'stem-reviewer';       // Reviewed → STEM Reviewer for audit
+        if (tabName === 'inprogress') return 'code-trainer';      // In progress = being worked on
+    }
+    
+    return 'unknown';
+}
+
+// Role display info with "waiting for" labels
+const ROLE_INFO = {
+    'code-trainer': { label: 'Code Trainer', waitingLabel: 'Waiting for Code Trainer', icon: '💻', color: '#3b82f6' },
+    'code-reviewer': { label: 'Code Reviewer', waitingLabel: 'Waiting for Code Reviewer', icon: '🔍', color: '#8b5cf6' },
+    'stem-tasker': { label: 'STEM Tasker', waitingLabel: 'Waiting for STEM Tasker', icon: '🔬', color: '#10b981' },
+    'stem-reviewer': { label: 'STEM Reviewer', waitingLabel: 'Waiting for STEM Reviewer', icon: '📋', color: '#f59e0b' },
+    'unknown': { label: 'Unknown', waitingLabel: 'Unknown', icon: '❓', color: '#6b7280' }
+};
+
+// Tabs that should NOT show the sidebar
+const TABS_WITHOUT_SIDEBAR = ['unclaimed', 'inprogress', 'delivery', 'trainer-stats', 'improper'];
+
+// Calculate detailed breakdown from tasks (with task links)
+function calculateDetailedBreakdown(tasks, tabName) {
+    const breakdown = {
+        total: 0,
+        bySubject: {},  // subject -> { total, byRole, byFormStage, tasks: [] }
+        byRole: {},     // role -> { count, tasks: [] }
+        byFormStage: {} // stage -> { total, byRole, tasks: [] }
+    };
+    
+    tasks.forEach(task => {
+        let formStage = task.formStage || 'No FormStage';
+        formStage = normalizeFormStage(formStage);
+        
+        let subject = 'Unknown';
+        if (task.seed) {
+            const metadata = task.seed.metadata || {};
+            const turingMetadata = task.seed.turingMetadata || {};
+            subject = metadata.Subject || metadata.subject || 
+                      turingMetadata.Subject || turingMetadata.subject || 'Unknown';
+        }
+        subject = normalizeSubject(subject);
+        
+        const role = getResponsibleRole(formStage, tabName);
+        
+        // Task info for links
+        const taskInfo = {
+            id: task.id,
+            link: task.colabLink || `https://labeling-g.turing.com/conversations/${task.id}`,
+            formStage: formStage
+        };
+        
+        // Update totals
+        breakdown.total++;
+        
+        // Update by role
+        if (!breakdown.byRole[role]) {
+            breakdown.byRole[role] = { count: 0, tasks: [] };
+        }
+        breakdown.byRole[role].count++;
+        breakdown.byRole[role].tasks.push(taskInfo);
+        
+        // Update by formStage
+        if (!breakdown.byFormStage[formStage]) {
+            breakdown.byFormStage[formStage] = { total: 0, byRole: {}, tasks: [] };
+        }
+        breakdown.byFormStage[formStage].total++;
+        breakdown.byFormStage[formStage].tasks.push(taskInfo);
+        if (!breakdown.byFormStage[formStage].byRole[role]) {
+            breakdown.byFormStage[formStage].byRole[role] = 0;
+        }
+        breakdown.byFormStage[formStage].byRole[role]++;
+        
+        // Update by subject
+        if (!breakdown.bySubject[subject]) {
+            breakdown.bySubject[subject] = { total: 0, byRole: {}, byFormStage: {}, tasks: [] };
+        }
+        breakdown.bySubject[subject].total++;
+        breakdown.bySubject[subject].tasks.push(taskInfo);
+        
+        if (!breakdown.bySubject[subject].byRole[role]) {
+            breakdown.bySubject[subject].byRole[role] = { count: 0, tasks: [] };
+        }
+        breakdown.bySubject[subject].byRole[role].count++;
+        breakdown.bySubject[subject].byRole[role].tasks.push(taskInfo);
+        
+        // Update formStage within subject
+        if (!breakdown.bySubject[subject].byFormStage[formStage]) {
+            breakdown.bySubject[subject].byFormStage[formStage] = { total: 0, byRole: {}, tasks: [] };
+        }
+        breakdown.bySubject[subject].byFormStage[formStage].total++;
+        breakdown.bySubject[subject].byFormStage[formStage].tasks.push(taskInfo);
+        if (!breakdown.bySubject[subject].byFormStage[formStage].byRole[role]) {
+            breakdown.bySubject[subject].byFormStage[formStage].byRole[role] = 0;
+        }
+        breakdown.bySubject[subject].byFormStage[formStage].byRole[role]++;
+    });
+    
+    return breakdown;
+}
+
+// Store current breakdown for sidebar
+window.currentBreakdown = null;
+window.currentTabName = null;
+
+// Update sidebar with breakdown data
+function updateSidebar(breakdown, tabName) {
+    window.currentBreakdown = breakdown;
+    window.currentTabName = tabName;
+    
+    const sidebar = document.getElementById('breakdown-sidebar');
+    const container = document.querySelector('.container');
+    const toggleBtn = document.getElementById('sidebar-toggle');
+    
+    if (!sidebar) return;
+    
+    // Hide sidebar for certain tabs
+    if (TABS_WITHOUT_SIDEBAR.includes(tabName)) {
+        sidebar.classList.add('hidden');
+        container.classList.remove('with-sidebar');
+        container.classList.add('sidebar-collapsed');
+        if (toggleBtn) toggleBtn.style.display = 'none';
+        return;
+    } else {
+        sidebar.classList.remove('hidden');
+        // Keep sidebar closed by default - user can open it with button
+        // Don't change open/collapsed state, just make sure it's not hidden
+        container.classList.add('with-sidebar');
+        container.classList.remove('sidebar-collapsed');
+        if (toggleBtn) toggleBtn.style.display = 'flex';
+    }
+    
+    const tabDisplayNames = {
+        'unclaimed': 'Unclaimed',
+        'inprogress': 'In Progress',
+        'rework': 'Rework',
+        'pending-review': 'Pending Review',
+        'reviewed': 'Reviewed',
+        'improper': 'Improper',
+        'delivery': 'Delivery',
+        'trainer-stats': 'Trainer Stats'
+    };
+    
+    let html = `
+        <div class="sidebar-header">
+            <div class="sidebar-header-icon">📊</div>
+            <div class="sidebar-header-content">
+                <h3>${tabDisplayNames[tabName] || tabName}</h3>
+                <div class="sidebar-total">${breakdown.total} tasks waiting</div>
+            </div>
+        </div>
+    `;
+    
+    // Waiting for summary - show who needs to pick these tasks
+    html += `<div class="sidebar-section waiting-section">
+        <div class="sidebar-section-title">⏳ Waiting to be picked by</div>
+        <div class="waiting-summary">`;
+    
+    const roles = ['code-trainer', 'code-reviewer', 'stem-tasker', 'stem-reviewer'];
+    for (const role of roles) {
+        const roleData = breakdown.byRole[role];
+        const count = roleData ? roleData.count : 0;
+        if (count > 0) {
+            const info = ROLE_INFO[role];
+            html += `<div class="waiting-card" style="--role-color: ${info.color}">
+                <div class="waiting-card-header">
+                    <span class="waiting-icon">${info.icon}</span>
+                    <span class="waiting-role">${info.label}</span>
+                </div>
+                <div class="waiting-count">${count}</div>
+                <div class="waiting-label">tasks waiting</div>
+            </div>`;
+        }
+    }
+    html += `</div></div>`;
+    
+    // By Subject breakdown with task links
+    html += `<div class="sidebar-section subjects-section">
+        <div class="sidebar-section-title">📚 By Subject</div>`;
+    
+    // Sort subjects by known order
+    const sortedSubjects = KNOWN_SUBJECTS.filter(s => breakdown.bySubject[s])
+        .concat(Object.keys(breakdown.bySubject).filter(s => !KNOWN_SUBJECTS.includes(s)));
+    
+    for (const subject of sortedSubjects) {
+        const subjectData = breakdown.bySubject[subject];
+        if (!subjectData) continue;
+        
+        // Get subject icon
+        const subjectIcons = {
+            'Maths': '🔢', 'Physics': '⚛️', 'Biology': '🧬', 
+            'Chemistry': '🧪', 'Hardware': '🔧', 'Data Science': '📊', 'Unknown': '❓'
+        };
+        const subjectIcon = subjectIcons[subject] || '📘';
+        
+        html += `<div class="subject-breakdown">
+            <div class="subject-breakdown-header" onclick="toggleSubjectBreakdown(this)">
+                <span class="subject-icon">${subjectIcon}</span>
+                <span class="subject-name">${subject}</span>
+                <span class="subject-count">${subjectData.total}</span>
+                <span class="expand-arrow">▶</span>
+            </div>
+            <div class="subject-breakdown-body" style="display: none;">`;
+        
+        // Show "waiting for" breakdown with expandable task links for each role
+        for (const role of roles) {
+            const roleData = subjectData.byRole[role];
+            if (roleData && roleData.count > 0) {
+                const info = ROLE_INFO[role];
+                const roleId = `${subject.replace(/\s+/g, '-')}-${role}`;
+                
+                html += `<div class="role-section" style="--role-color: ${info.color}">
+                    <div class="role-section-header" onclick="toggleRoleLinks(this)">
+                        <div class="role-info">
+                            <span class="role-icon-sm">${info.icon}</span>
+                            <span class="role-name-sm">${info.waitingLabel}</span>
+                        </div>
+                        <span class="role-count-sm">${roleData.count}</span>
+                        <span class="role-expand">▶</span>
+                    </div>
+                    <div class="role-links" style="display: none;">`;
+                
+                // Show task links for this role
+                const tasksToShow = roleData.tasks.slice(0, 15);
+                for (const task of tasksToShow) {
+                    html += `<a href="${task.link}" target="_blank" class="task-link-sm">#${task.id}</a>`;
+                }
+                if (roleData.tasks.length > 15) {
+                    html += `<span class="more-tasks-sm">+${roleData.tasks.length - 15} more</span>`;
+                }
+                
+                html += `</div></div>`;
+            }
+        }
+        
+        html += `</div></div>`;
+    }
+    
+    html += `</div>`;
+    
+    sidebar.innerHTML = html;
+}
+
+// Toggle subject breakdown
+function toggleSubjectBreakdown(header) {
+    const body = header.nextElementSibling;
+    const arrow = header.querySelector('.expand-arrow');
+    
+    if (body.style.display === 'none') {
+        body.style.display = 'block';
+        arrow.textContent = '▼';
+        header.classList.add('expanded');
+    } else {
+        body.style.display = 'none';
+        arrow.textContent = '▶';
+        header.classList.remove('expanded');
+    }
+}
+
+// Toggle role links within subject
+function toggleRoleLinks(header) {
+    const links = header.nextElementSibling;
+    const arrow = header.querySelector('.role-expand');
+    
+    if (links.style.display === 'none') {
+        links.style.display = 'flex';
+        arrow.textContent = '▼';
+        header.classList.add('expanded');
+    } else {
+        links.style.display = 'none';
+        arrow.textContent = '▶';
+        header.classList.remove('expanded');
+    }
+}
+
+// Hide sidebar completely
+function hideSidebar() {
+    const sidebar = document.getElementById('breakdown-sidebar');
+    const container = document.querySelector('.container');
+    const toggleBtn = document.getElementById('sidebar-toggle');
+    
+    if (sidebar) {
+        sidebar.classList.add('hidden');
+        sidebar.classList.remove('open');
+    }
+    if (container) {
+        container.classList.remove('with-sidebar');
+        container.classList.remove('sidebar-open');
+        container.classList.add('sidebar-collapsed');
+    }
+    if (toggleBtn) {
+        toggleBtn.style.display = 'none';
+        toggleBtn.classList.remove('sidebar-open');
+    }
+}
+
 // Wait for DOM
 document.addEventListener('DOMContentLoaded', function() {
     console.log('=== DOM READY ===');
@@ -263,6 +583,9 @@ function displayTasks(tabName, tasks) {
     
     // For delivery tab, group by subject and deliveryBatch name
     if (tabName === 'delivery') {
+        // Hide sidebar for delivery tab
+        hideSidebar();
+        
         const grouped = groupTasksBySubjectAndDeliveryBatch(tasks);
         
         // Calculate overall totals per batch status
@@ -334,6 +657,9 @@ function displayTasks(tabName, tasks) {
     
     // For trainer stats tab, show trainer-wise breakdown
     if (tabName === 'trainer-stats') {
+        // Hide sidebar for trainer-stats tab
+        hideSidebar();
+        
         const trainerStats = groupTasksByTrainer(tasks);
         
         // Calculate overall totals
@@ -510,6 +836,12 @@ function displayTasks(tabName, tasks) {
     // Group by subject and formStage
     const grouped = groupTasksBySubjectAndFormStage(tasks);
     
+    // Calculate detailed breakdown
+    const breakdown = calculateDetailedBreakdown(tasks, tabName);
+    
+    // Update sidebar
+    updateSidebar(breakdown, tabName);
+    
     // Calculate overall totals per formStage
     const overallFormStageTotals = {};
     let grandTotal = 0;
@@ -522,12 +854,15 @@ function displayTasks(tabName, tasks) {
     
     // Update summary pills (outside the main card)
     if (summaryContainer) {
+        // Simple summary with total and formStage counts only (role info is in sidebar)
         let summaryHtml = `
-            <div class="summary-pill summary-total-pill">
-                <span class="pill-label">Total</span>
-                <span class="pill-count">${grandTotal}</span>
-            </div>`;
+            <div class="summary-row summary-main">
+                <div class="summary-pill summary-total-pill">
+                    <span class="pill-label">Total</span>
+                    <span class="pill-count">${grandTotal}</span>
+                </div>`;
         
+        // FormStage pills
         for (const [formStage, count] of Object.entries(overallFormStageTotals)) {
             const colorClass = tabName === 'improper' ? 'improper' : getFormStageColorClass(formStage);
             summaryHtml += `<div class="summary-pill ${colorClass}">
@@ -535,6 +870,8 @@ function displayTasks(tabName, tasks) {
                 <span class="pill-count">${count}</span>
             </div>`;
         }
+        summaryHtml += `</div>`;
+        
         summaryContainer.innerHTML = summaryHtml;
     }
     
@@ -862,6 +1199,12 @@ function groupTasksByTrainer(tasks) {
         trainers[trainerName].subjects[subject].formStages[formStage].minutes += durationMinutes;
     });
     
+    // Convert taskIds Sets to counts for cleaner data
+    for (const trainer of Object.values(trainers)) {
+        trainer.uniqueTaskCount = trainer.taskIds?.size || trainer.taskCount;
+        delete trainer.taskIds;
+    }
+    
     return trainers;
 }
 
@@ -998,6 +1341,27 @@ function renderTrainerCards(trainersArray) {
     }
     
     container.innerHTML = html;
+}
+
+// Toggle sidebar visibility (right side)
+function toggleSidebar() {
+    const sidebar = document.getElementById('breakdown-sidebar');
+    const container = document.querySelector('.container');
+    const toggleBtn = document.getElementById('sidebar-toggle');
+    
+    const isOpen = sidebar.classList.contains('open');
+    
+    if (isOpen) {
+        sidebar.classList.remove('open');
+        sidebar.classList.add('collapsed');
+        container.classList.remove('sidebar-open');
+        toggleBtn.classList.remove('sidebar-open');
+    } else {
+        sidebar.classList.add('open');
+        sidebar.classList.remove('collapsed');
+        container.classList.add('sidebar-open');
+        toggleBtn.classList.add('sidebar-open');
+    }
 }
 
 console.log('=== DASHBOARD SCRIPT READY ===');
