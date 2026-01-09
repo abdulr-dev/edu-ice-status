@@ -1,6 +1,91 @@
 // Simple but complete dashboard script
 console.log('=== DASHBOARD SCRIPT LOADED ===');
 
+// ===== PASSWORD PROTECTION FOR TRAINER STATS =====
+// Hash of the password (SHA-256) - password is NOT stored in plain text
+// To change password: generate new hash at https://emn178.github.io/online-tools/sha256.html
+const TRAINER_STATS_PASSWORD_HASH = 'b2294cbadf6f4da2e844eba86d816356723b559073f422547246c13f4a3c4d87';
+
+// SHA-256 hash function
+async function sha256(message) {
+    const msgBuffer = new TextEncoder().encode(message);
+    const hashBuffer = await crypto.subtle.digest('SHA-256', msgBuffer);
+    const hashArray = Array.from(new Uint8Array(hashBuffer));
+    const hashHex = hashArray.map(b => b.toString(16).padStart(2, '0')).join('');
+    return hashHex;
+}
+
+// Check if trainer stats is authenticated this session
+function isTrainerStatsAuthenticated() {
+    return sessionStorage.getItem('trainerStatsAuth') === 'true';
+}
+
+// Verify password and authenticate
+async function verifyTrainerStatsPassword(password) {
+    const hash = await sha256(password);
+    if (hash === TRAINER_STATS_PASSWORD_HASH) {
+        sessionStorage.setItem('trainerStatsAuth', 'true');
+        return true;
+    }
+    return false;
+}
+
+// Show password overlay for trainer stats
+function showTrainerStatsPasswordOverlay(container, summaryContainer) {
+    if (summaryContainer) summaryContainer.innerHTML = '';
+    
+    container.innerHTML = `
+        <div class="password-overlay">
+            <div class="password-modal">
+                <div class="password-icon">🔒</div>
+                <h3>Trainer Stats - Restricted Access</h3>
+                <p>This section is only accessible to team leads.</p>
+                <div class="password-input-group">
+                    <input type="password" id="trainer-stats-password" placeholder="Enter password" autocomplete="off">
+                    <button onclick="submitTrainerStatsPassword()" class="password-submit-btn">Unlock</button>
+                </div>
+                <div id="password-error" class="password-error"></div>
+                <p class="password-hint">Contact your lead if you need access.</p>
+            </div>
+        </div>
+    `;
+    
+    // Add enter key listener
+    setTimeout(() => {
+        const input = document.getElementById('trainer-stats-password');
+        if (input) {
+            input.focus();
+            input.addEventListener('keypress', function(e) {
+                if (e.key === 'Enter') {
+                    submitTrainerStatsPassword();
+                }
+            });
+        }
+    }, 100);
+}
+
+// Handle password submission
+async function submitTrainerStatsPassword() {
+    const input = document.getElementById('trainer-stats-password');
+    const errorDiv = document.getElementById('password-error');
+    
+    if (!input || !input.value) {
+        errorDiv.textContent = 'Please enter a password';
+        return;
+    }
+    
+    const isValid = await verifyTrainerStatsPassword(input.value);
+    
+    if (isValid) {
+        // Reload trainer stats with actual data
+        loadData('trainer-stats');
+    } else {
+        errorDiv.textContent = 'Incorrect password. Access denied.';
+        input.value = '';
+        input.focus();
+    }
+}
+
 // Check if CONFIG is loaded from config.js
 if (typeof CONFIG === 'undefined') {
     console.error('CONFIG not found! Make sure config.js is loaded before this script.');
@@ -662,6 +747,12 @@ function displayTasks(tabName, tasks) {
     if (tabName === 'trainer-stats') {
         // Hide sidebar for trainer-stats tab
         hideSidebar();
+        
+        // Check if user is authenticated
+        if (!isTrainerStatsAuthenticated()) {
+            showTrainerStatsPasswordOverlay(container, summaryContainer);
+            return;
+        }
         
         const trainerStats = groupTasksByTrainer(tasks);
         
