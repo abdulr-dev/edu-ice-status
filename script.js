@@ -1,5 +1,4 @@
 // Simple but complete dashboard script
-console.log('=== DASHBOARD SCRIPT LOADED ===');
 
 // ===== PASSWORD PROTECTION FOR TRAINER STATS =====
 // Hash of the password (SHA-256) - password is NOT stored in plain text
@@ -99,7 +98,6 @@ const PROJECT_ID = CONFIG.PROJECT_ID || 640;
 
 // Detect environment
 const isLocal = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1';
-console.log('Environment:', isLocal ? 'Local' : 'Vercel/Production');
 
 // API base URL - different for local vs deployed
 const LOCAL_API_BASE = (CONFIG.LOCAL_PROXY || 'http://localhost:3000') + '/api/conversations';
@@ -433,16 +431,143 @@ function hideSidebar() {
 
 // Wait for DOM
 document.addEventListener('DOMContentLoaded', function() {
-    console.log('=== DOM READY ===');
+    // Initialize with Status View
+    initializeStatusView();
     
-    // Setup tab clicks
+    // Setup view toggle buttons
+    const statusViewBtn = document.getElementById('status-view-btn');
+    const subjectsViewBtn = document.getElementById('subjects-view-btn');
+    
+    statusViewBtn.addEventListener('click', function() {
+        statusViewBtn.classList.add('active');
+        subjectsViewBtn.classList.remove('active');
+        document.getElementById('dynamic-tabs').innerHTML = '';
+        initializeStatusView();
+    });
+    
+    subjectsViewBtn.addEventListener('click', function() {
+        subjectsViewBtn.classList.add('active');
+        statusViewBtn.classList.remove('active');
+        document.getElementById('dynamic-tabs').innerHTML = '';
+        initializeSubjectsView();
+    });
+    
+    // Load initial data
+    loadData('unclaimed');
+});
+
+// Initialize Status View with original tabs
+function initializeStatusView() {
+    const dynamicTabs = document.getElementById('dynamic-tabs');
+    
+    const statusViewHTML = `
+        <div class="tabs">
+            <button class="tab-btn active" data-tab="unclaimed">
+                Unclaimed
+                <span class="tab-count" id="count-unclaimed">0</span>
+            </button>
+            <button class="tab-btn" data-tab="inprogress">
+                In Progress
+                <span class="tab-count" id="count-inprogress">0</span>
+            </button>
+            <button class="tab-btn" data-tab="pending-review">
+                Pending Review
+                <span class="tab-count" id="count-pending-review">0</span>
+            </button>
+            <button class="tab-btn" data-tab="reviewed">
+                Reviewed
+                <span class="tab-count" id="count-reviewed">0</span>
+            </button>
+            <button class="tab-btn" data-tab="rework">
+                Rework
+                <span class="tab-count" id="count-rework">0</span>
+            </button>
+            <button class="tab-btn" data-tab="improper">
+                Improper
+                <span class="tab-count" id="count-improper">0</span>
+            </button>
+            <button class="tab-btn" data-tab="delivery">
+                Delivery
+                <span class="tab-count" id="count-delivery">0</span>
+            </button>
+            <button class="tab-btn" data-tab="trainer-stats">
+                Trainer Stats
+                <span class="tab-count" id="count-trainer-stats">0</span>
+            </button>
+        </div>
+
+        <div class="tab-content active" id="tab-unclaimed">
+            <div class="tab-summary" id="summary-unclaimed"></div>
+            <div class="subjects-wrapper">
+                <div class="loading" id="loading-unclaimed">Loading...</div>
+                <div class="subjects-container" id="subjects-unclaimed"></div>
+            </div>
+        </div>
+
+        <div class="tab-content" id="tab-inprogress">
+            <div class="tab-summary" id="summary-inprogress"></div>
+            <div class="subjects-wrapper">
+                <div class="loading" id="loading-inprogress">Loading...</div>
+                <div class="subjects-container" id="subjects-inprogress"></div>
+            </div>
+        </div>
+
+        <div class="tab-content" id="tab-pending-review">
+            <div class="tab-summary" id="summary-pending-review"></div>
+            <div class="subjects-wrapper">
+                <div class="loading" id="loading-pending-review">Loading...</div>
+                <div class="subjects-container" id="subjects-pending-review"></div>
+            </div>
+        </div>
+
+        <div class="tab-content" id="tab-reviewed">
+            <div class="tab-summary" id="summary-reviewed"></div>
+            <div class="subjects-wrapper">
+                <div class="loading" id="loading-reviewed">Loading...</div>
+                <div class="subjects-container" id="subjects-reviewed"></div>
+            </div>
+        </div>
+
+        <div class="tab-content" id="tab-rework">
+            <div class="tab-summary" id="summary-rework"></div>
+            <div class="subjects-wrapper">
+                <div class="loading" id="loading-rework">Loading...</div>
+                <div class="subjects-container" id="subjects-rework"></div>
+            </div>
+        </div>
+
+        <div class="tab-content" id="tab-improper">
+            <div class="tab-summary" id="summary-improper"></div>
+            <div class="subjects-wrapper">
+                <div class="loading" id="loading-improper">Loading...</div>
+                <div class="subjects-container" id="subjects-improper"></div>
+            </div>
+        </div>
+
+        <div class="tab-content" id="tab-delivery">
+            <div class="tab-summary" id="summary-delivery"></div>
+            <div class="subjects-wrapper">
+                <div class="loading" id="loading-delivery">Loading...</div>
+                <div class="subjects-container" id="subjects-delivery"></div>
+            </div>
+        </div>
+
+        <div class="tab-content" id="tab-trainer-stats">
+            <div class="tab-summary" id="summary-trainer-stats"></div>
+            <div class="subjects-wrapper">
+                <div class="loading" id="loading-trainer-stats">Loading...</div>
+                <div class="subjects-container" id="subjects-trainer-stats"></div>
+            </div>
+        </div>
+    `;
+    
+    dynamicTabs.innerHTML = statusViewHTML;
+    
+    // Setup tab clicks for status view
     const tabs = document.querySelectorAll('.tab-btn');
-    console.log('Found tabs:', tabs.length);
-    
     tabs.forEach(function(tab) {
         tab.addEventListener('click', function() {
             const tabName = this.getAttribute('data-tab');
-            console.log('Tab clicked:', tabName);
             
             // Remove active from all
             tabs.forEach(t => t.classList.remove('active'));
@@ -456,15 +581,315 @@ document.addEventListener('DOMContentLoaded', function() {
             loadData(tabName);
         });
     });
+}
+
+// Initialize Subjects View with subject tabs
+function initializeSubjectsView() {
+    const dynamicTabs = document.getElementById('dynamic-tabs');
+    const subjects = ['Maths', 'Physics', 'Biology', 'Chemistry', 'Hardware', 'Data Science'];
     
-    // Load initial data
-    console.log('Loading initial data...');
-    loadData('unclaimed');
-});
+    let subjectTabsHTML = '<div class="tabs">';
+    subjects.forEach((subject, index) => {
+        const isActive = index === 0 ? 'active' : '';
+        const tabId = subject.toLowerCase().replace(' ', '-');
+        subjectTabsHTML += `
+            <button class="tab-btn ${isActive}" data-subject="${subject}" data-tab-id="${tabId}">
+                ${subject}
+                <span class="tab-count" id="count-subject-${tabId}">0</span>
+            </button>
+        `;
+    });
+    subjectTabsHTML += '</div>';
+    
+    // Add status tabs container that will be populated when subject is selected
+    subjectTabsHTML += '<div id="subject-status-tabs-container"></div>';
+    
+    // Add content container
+    subjectTabsHTML += '<div id="subject-content-container"></div>';
+    
+    dynamicTabs.innerHTML = subjectTabsHTML;
+    
+    // Setup subject tab clicks
+    const subjectTabs = document.querySelectorAll('[data-subject]');
+    subjectTabs.forEach(function(tab) {
+        tab.addEventListener('click', function() {
+            const subject = this.getAttribute('data-subject');
+            
+            // Remove active from all subject tabs
+            subjectTabs.forEach(t => t.classList.remove('active'));
+            
+            // Add active to clicked
+            this.classList.add('active');
+            
+            // Load subject with all status tabs
+            loadSubjectWithStatusTabs(subject);
+        });
+    });
+    
+    // Load initial subject
+    loadSubjectWithStatusTabs('Maths');
+}
+
+// Load a subject and show all status sections at once (not tabbed)
+async function loadSubjectWithStatusTabs(subject) {
+    const statusTabsContainer = document.getElementById('subject-status-tabs-container');
+    const contentContainer = document.getElementById('subject-content-container');
+    
+    // Show loading state
+    contentContainer.innerHTML = '<div class="loading" style="padding: 40px; text-align: center;"><div class="spinner"></div><div class="loading-text">Loading ' + subject + ' data...</div></div>';
+    statusTabsContainer.innerHTML = '';
+    
+    try {
+        // Fetch all tasks for this subject across all statuses
+        const allStatuses = ['unclaimed', 'inprogress', 'pending-review', 'reviewed', 'rework', 'improper', 'delivery'];
+        let allSubjectTasks = [];
+        
+        for (const statusTab of allStatuses) {
+            const tasks = await fetchAllPagesForStatus(statusTab);
+            // Filter by subject
+            const subjectTasks = tasks.filter(task => {
+                let taskSubject = 'Unknown';
+                if (task.seed) {
+                    const metadata = task.seed.metadata || {};
+                    const turingMetadata = task.seed.turingMetadata || {};
+                    taskSubject = metadata.Subject || metadata.subject || 
+                                turingMetadata.Subject || turingMetadata.subject || 'Unknown';
+                }
+                taskSubject = normalizeSubject(taskSubject);
+                return taskSubject === subject;
+            });
+            allSubjectTasks.push({ status: statusTab, tasks: subjectTasks });
+        }
+        
+        // Build all status sections visible at once (no tabs)
+        const statusDisplayNames = {
+            'unclaimed': 'Unclaimed',
+            'inprogress': 'In Progress',
+            'pending-review': 'Pending Review',
+            'reviewed': 'Reviewed',
+            'rework': 'Rework',
+            'improper': 'Improper',
+            'delivery': 'Delivery'
+        };
+        
+        let contentHTML = '';
+        allSubjectTasks.forEach(statusData => {
+            const displayName = statusDisplayNames[statusData.status] || statusData.status;
+            const count = statusData.tasks.length;
+            const statusId = statusData.status.replace('-', '');
+            
+            contentHTML += `
+                <div class="subject-status-section" id="subject-status-${statusId}">
+                    <div class="status-section-header">
+                        <h3>${displayName}</h3>
+                        <span class="status-count">${count}</span>
+                    </div>
+                    <div class="tab-summary" id="subject-summary-${statusId}"></div>
+                    <div class="subjects-wrapper">
+                        <div class="subjects-container" id="subject-tasks-${statusId}"></div>
+                    </div>
+                </div>
+            `;
+        });
+        
+        contentContainer.innerHTML = contentHTML;
+        
+        // Display tasks for each status
+        allSubjectTasks.forEach(statusData => {
+            const statusId = statusData.status.replace('-', '');
+            displaySubjectStatusTasks(statusId, statusData.status, statusData.tasks);
+        });
+        
+    } catch (error) {
+        console.error('Error loading subject data:', error);
+        contentContainer.innerHTML = '<div class="empty-state"><div class="empty-state-icon">⚠️</div><div class="empty-state-text">Error: ' + error.message + '</div></div>';
+    }
+}
+
+// Display tasks for a specific status within a subject view
+function displaySubjectStatusTasks(statusId, statusName, tasks) {
+    const container = document.getElementById('subject-tasks-' + statusId);
+    const summaryContainer = document.getElementById('subject-summary-' + statusId);
+    
+    if (!container) return;
+    
+    if (tasks.length === 0) {
+        container.innerHTML = '<div class="empty-state"><div class="empty-state-icon">📭</div><div class="empty-state-text">No tasks</div></div>';
+        summaryContainer.innerHTML = '';
+        return;
+    }
+    
+    // Show total count in summary
+    if (summaryContainer) {
+        summaryContainer.innerHTML = '<div class="subject-task-count">Total: <strong>' + tasks.length + '</strong> task' + (tasks.length !== 1 ? 's' : '') + '</div>';
+    }
+    
+    // For Improper and Delivery, only show total count
+    if (statusName === 'improper' || statusName === 'delivery') {
+        container.innerHTML = '<div class="empty-state" style="background: white; border-left: 3px solid #667eea;"><div class="count-display" style="font-size: 1.2rem;">' + tasks.length + ' task' + (tasks.length !== 1 ? 's' : '') + '</div></div>';
+        return;
+    }
+    
+    // Group tasks by formStage (phase)
+    const tasksByPhase = {};
+    
+    tasks.forEach(function(task) {
+        const formStage = normalizeFormStage(task.formStage || 'Unknown');
+        if (!tasksByPhase[formStage]) {
+            tasksByPhase[formStage] = [];
+        }
+        tasksByPhase[formStage].push(task);
+    });
+    
+    // Display tasks grouped by phase, then by team
+    let html = '';
+    
+    Object.keys(tasksByPhase).sort().forEach(function(phase) {
+        const phaseTasks = tasksByPhase[phase];
+        
+        // Group tasks within phase by team responsibility
+        const tasksByTeam = { 'CODE': [], 'STEM': [] };
+        
+        phaseTasks.forEach(function(task) {
+            const role = getResponsibleRole(task.formStage, statusName);
+            const team = role.startsWith('code') ? 'CODE' : 'STEM';
+            tasksByTeam[team].push(task);
+        });
+        
+        html += `
+            <div class="phase-group">
+                <div class="phase-header">
+                    <h4>${phase}</h4>
+                    <span class="phase-count">${phaseTasks.length}</span>
+                </div>
+                <div class="phase-tasks">
+        `;
+        
+        // Display CODE team tasks
+        if (tasksByTeam['CODE'].length > 0) {
+            html += `
+                <div class="team-subsection">
+                    <div class="team-label">💻 CODE (${tasksByTeam['CODE'].length})</div>
+                    <div class="team-task-list">
+            `;
+            
+            // Split tasks into columns of max 5 tasks each
+            const tasksPerColumn = 5;
+            for (let i = 0; i < tasksByTeam['CODE'].length; i += tasksPerColumn) {
+                const columnTasks = tasksByTeam['CODE'].slice(i, i + tasksPerColumn);
+                html += '<div class="task-column">';
+                
+                columnTasks.forEach(function(task) {
+                    const taskId = String(task.id);
+                    const link = task.colabLink || '#';
+                    
+                    html += `
+                        <div class="subject-task-row">
+                            <a href="${link}" target="_blank" title="Task ${taskId}" class="task-link">
+                                ${taskId}
+                            </a>
+                        </div>
+                    `;
+                });
+                
+                html += '</div>';
+            }
+            
+            html += `
+                    </div>
+                </div>
+            `;
+        }
+        
+        // Display STEM team tasks
+        if (tasksByTeam['STEM'].length > 0) {
+            html += `
+                <div class="team-subsection">
+                    <div class="team-label">🔬 STEM (${tasksByTeam['STEM'].length})</div>
+                    <div class="team-task-list">
+            `;
+            
+            // Split tasks into columns of max 5 tasks each
+            const tasksPerColumn = 5;
+            for (let i = 0; i < tasksByTeam['STEM'].length; i += tasksPerColumn) {
+                const columnTasks = tasksByTeam['STEM'].slice(i, i + tasksPerColumn);
+                html += '<div class="task-column">';
+                
+                columnTasks.forEach(function(task) {
+                    const taskId = String(task.id);
+                    const link = task.colabLink || '#';
+                    
+                    html += `
+                        <div class="subject-task-row">
+                            <a href="${link}" target="_blank" title="Task ${taskId}" class="task-link">
+                                ${taskId}
+                            </a>
+                        </div>
+                    `;
+                });
+                
+                html += '</div>';
+            }
+            
+            html += `
+                    </div>
+                </div>
+            `;
+        }
+        
+        html += `
+                </div>
+            </div>
+        `;
+    });
+    
+    container.innerHTML = html;
+}
+
+
+
+// Fetch all pages for a specific status (used by Subject View)
+async function fetchAllPagesForStatus(statusTab) {
+    let allTasks = [];
+    let page = 1;
+    let totalPages = 1;
+    
+    do {
+        const apiUrl = buildApiUrl(statusTab, page);
+        
+        let response;
+        if (isLocal) {
+            // Local: use local proxy directly
+            const localUrl = apiUrl.replace(TURING_API_BASE, LOCAL_API_BASE);
+            response = await fetch(localUrl);
+        } else {
+            // Vercel: use the proxy function
+            const proxyUrl = '/api/proxy?url=' + encodeURIComponent(apiUrl);
+            response = await fetch(proxyUrl, {
+                headers: {
+                    'Authorization': 'Bearer ' + AUTH_TOKEN
+                }
+            });
+        }
+        
+        if (!response.ok) {
+            const errorText = await response.text();
+            throw new Error('API returned ' + response.status + ': ' + errorText.substring(0, 100));
+        }
+        
+        const data = await response.json();
+        allTasks = allTasks.concat(data.data || []);
+        totalPages = data.pageCount || 1;
+        
+        page++;
+    } while (page <= totalPages);
+    
+    return allTasks;
+}
+
+// Add event listeners for the view toggle buttons
 
 async function loadData(tabName) {
-    console.log('loadData called for:', tabName);
-    
     const container = document.getElementById('subjects-' + tabName);
     const loading = document.getElementById('loading-' + tabName);
     const summaryContainer = document.getElementById('summary-' + tabName);
@@ -508,18 +933,15 @@ async function fetchAllPages(tabName) {
     
     do {
         const apiUrl = buildApiUrl(tabName, page);
-        console.log('Fetching page', page);
         
         let response;
         if (isLocal) {
             // Local: use local proxy directly
             const localUrl = apiUrl.replace(TURING_API_BASE, LOCAL_API_BASE);
-            console.log('Local URL:', localUrl.substring(0, 80) + '...');
             response = await fetch(localUrl);
         } else {
             // Vercel: use the proxy function
             const proxyUrl = '/api/proxy?url=' + encodeURIComponent(apiUrl);
-            console.log('Vercel proxy URL:', proxyUrl.substring(0, 80) + '...');
             response = await fetch(proxyUrl, {
                 headers: {
                     'Authorization': 'Bearer ' + AUTH_TOKEN
@@ -536,11 +958,9 @@ async function fetchAllPages(tabName) {
         allTasks = allTasks.concat(data.data || []);
         totalPages = data.pageCount || 1;
         
-        console.log('Page', page, 'of', totalPages, '- Got', data.data?.length || 0, 'tasks');
         page++;
     } while (page <= totalPages);
     
-    console.log('Total tasks fetched:', allTasks.length);
     return allTasks;
 }
 
@@ -652,9 +1072,16 @@ function buildApiUrl(tabName, page) {
     return TURING_API_BASE + '?' + params.toString();
 }
 
-function displayTasks(tabName, tasks) {
-    const container = document.getElementById('subjects-' + tabName);
-    const summaryContainer = document.getElementById('summary-' + tabName);
+
+
+function displayTasks(tabName, tasks, summaryContainer, container) {
+    // Allow overriding container and summaryContainer for subject view
+    if (!container) {
+        container = document.getElementById('subjects-' + tabName);
+    }
+    if (!summaryContainer) {
+        summaryContainer = document.getElementById('summary-' + tabName);
+    }
     
     if (tasks.length === 0) {
         container.innerHTML = '<div class="empty-state"><div class="empty-state-icon">📭</div><div class="empty-state-text">No tasks found</div></div>';
@@ -1457,5 +1884,3 @@ function toggleSidebar() {
         toggleBtn.classList.add('sidebar-open');
     }
 }
-
-console.log('=== DASHBOARD SCRIPT READY ===');
