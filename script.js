@@ -586,15 +586,26 @@ function initializeStatusView() {
 // Initialize Subjects View with subject tabs
 function initializeSubjectsView() {
     const dynamicTabs = document.getElementById('dynamic-tabs');
-    const subjects = ['Maths', 'Physics', 'Biology', 'Chemistry', 'Hardware', 'Data Science'];
     
-    let subjectTabsHTML = '<div class="tabs">';
-    subjects.forEach((subject, index) => {
+    // Subject configuration with icons and colors
+    const subjectConfig = [
+        { name: 'Maths', icon: '🔢', color: '#3b82f6' },
+        { name: 'Physics', icon: '⚡', color: '#8b5cf6' },
+        { name: 'Biology', icon: '🧬', color: '#10b981' },
+        { name: 'Chemistry', icon: '🧪', color: '#f59e0b' },
+        { name: 'Hardware', icon: '🔧', color: '#6366f1' },
+        { name: 'Data Science', icon: '📊', color: '#ec4899' }
+    ];
+    
+    let subjectTabsHTML = '<div class="tabs subject-tabs">';
+    subjectConfig.forEach((subject, index) => {
         const isActive = index === 0 ? 'active' : '';
-        const tabId = subject.toLowerCase().replace(' ', '-');
+        const tabId = subject.name.toLowerCase().replace(' ', '-');
         subjectTabsHTML += `
-            <button class="tab-btn ${isActive}" data-subject="${subject}" data-tab-id="${tabId}">
-                ${subject}
+            <button class="tab-btn subject-tab ${isActive}" data-subject="${subject.name}" data-tab-id="${tabId}" style="--subject-color: ${subject.color}">
+                <span class="subject-icon">${subject.icon}</span>
+                <span class="subject-name">${subject.name}</span>
+                <span class="tab-count subject-count" id="count-subject-${tabId}">0</span>
             </button>
         `;
     });
@@ -634,14 +645,33 @@ async function loadSubjectWithStatusTabs(subject) {
     const statusTabsContainer = document.getElementById('subject-status-tabs-container');
     const contentContainer = document.getElementById('subject-content-container');
     
-    // Show loading state
-    contentContainer.innerHTML = '<div class="loading" style="padding: 40px; text-align: center;"><div class="spinner"></div><div class="loading-text">Loading ' + subject + ' data...</div></div>';
+    // Get subject icon
+    const subjectIcons = {
+        'Maths': '🔢',
+        'Physics': '⚡',
+        'Biology': '🧬',
+        'Chemistry': '🧪',
+        'Hardware': '🔧',
+        'Data Science': '📊'
+    };
+    const icon = subjectIcons[subject] || '📚';
+    
+    // Show loading state with subject-specific styling
+    contentContainer.innerHTML = `
+        <div class="subject-loading-state">
+            <div class="subject-loading-icon">${icon}</div>
+            <div class="subject-loading-spinner"></div>
+            <div class="subject-loading-text">Loading ${subject} data...</div>
+            <div class="subject-loading-subtext">Fetching from all status categories</div>
+        </div>
+    `;
     statusTabsContainer.innerHTML = '';
     
     try {
         // Fetch all tasks for this subject across all statuses
         const allStatuses = ['unclaimed', 'inprogress', 'pending-review', 'reviewed', 'rework', 'improper', 'delivery'];
         let allSubjectTasks = [];
+        let totalCount = 0;
         
         for (const statusTab of allStatuses) {
             const tasks = await fetchAllPagesForStatus(statusTab);
@@ -658,38 +688,63 @@ async function loadSubjectWithStatusTabs(subject) {
                 return taskSubject === subject;
             });
             allSubjectTasks.push({ status: statusTab, tasks: subjectTasks });
+            totalCount += subjectTasks.length;
+        }
+        
+        // Update subject tab count
+        const tabId = subject.toLowerCase().replace(' ', '-');
+        const countElement = document.getElementById('count-subject-' + tabId);
+        if (countElement) {
+            countElement.textContent = totalCount;
         }
         
         // Build all status sections visible at once (no tabs)
         const statusDisplayNames = {
-            'unclaimed': 'Unclaimed',
-            'inprogress': 'In Progress',
-            'pending-review': 'Pending Review',
-            'reviewed': 'Reviewed',
-            'rework': 'Rework',
-            'improper': 'Improper',
-            'delivery': 'Delivery'
+            'unclaimed': { label: 'Unclaimed', icon: '📥' },
+            'inprogress': { label: 'In Progress', icon: '⚙️' },
+            'pending-review': { label: 'Pending Review', icon: '👀' },
+            'reviewed': { label: 'Reviewed', icon: '✅' },
+            'rework': { label: 'Rework', icon: '🔄' },
+            'improper': { label: 'Improper', icon: '⚠️' },
+            'delivery': { label: 'Delivery', icon: '📦' }
         };
         
-        let contentHTML = '';
+        let contentHTML = `<div class="subject-header-banner">
+            <span class="subject-banner-icon">${icon}</span>
+            <span class="subject-banner-title">${subject}</span>
+            <span class="subject-banner-count">${totalCount} total tasks</span>
+        </div>`;
+        
+        // Start grid container for side-by-side layout
+        contentHTML += '<div class="subject-sections-grid">';
+        
         allSubjectTasks.forEach(statusData => {
-            const displayName = statusDisplayNames[statusData.status] || statusData.status;
+            const statusInfo = statusDisplayNames[statusData.status] || { label: statusData.status, icon: '📋' };
             const count = statusData.tasks.length;
             const statusId = statusData.status.replace('-', '');
             
+            // Only show sections with tasks (collapsible empty ones)
+            const isEmpty = count === 0;
+            const collapsedClass = isEmpty ? 'collapsed-section' : '';
+            
             contentHTML += `
-                <div class="subject-status-section" id="subject-status-${statusId}">
+                <div class="subject-status-section ${collapsedClass}" id="subject-status-${statusId}">
                     <div class="status-section-header">
-                        <h3>${displayName}</h3>
+                        <h3><span class="status-icon">${statusInfo.icon}</span> ${statusInfo.label}</h3>
                         <span class="status-count">${count}</span>
                     </div>
-                    <div class="tab-summary" id="subject-summary-${statusId}"></div>
+                    ${!isEmpty ? `
                     <div class="subjects-wrapper">
                         <div class="subjects-container" id="subject-tasks-${statusId}"></div>
                     </div>
+                    ` : `
+                    <div class="empty-section-message">No tasks</div>
+                    `}
                 </div>
             `;
         });
+        
+        contentHTML += '</div>'; // Close grid container
         
         contentContainer.innerHTML = contentHTML;
         
@@ -723,9 +778,16 @@ function displaySubjectStatusTasks(statusId, statusName, tasks) {
         summaryContainer.innerHTML = '<div class="subject-task-count">Total: <strong>' + tasks.length + '</strong> task' + (tasks.length !== 1 ? 's' : '') + '</div>';
     }
     
-    // For Improper and Delivery, only show total count
+    // For Improper and Delivery, show simple list of task links (no team/phase grouping)
     if (statusName === 'improper' || statusName === 'delivery') {
-        container.innerHTML = '<div class="empty-state" style="background: white; border-left: 3px solid #667eea;"><div class="count-display" style="font-size: 1.2rem;">' + tasks.length + ' task' + (tasks.length !== 1 ? 's' : '') + '</div></div>';
+        let html = '<div class="simple-task-list">';
+        tasks.forEach(function(task) {
+            const taskId = String(task.id);
+            const link = task.colabLink || '#';
+            html += `<a href="${link}" target="_blank" title="Task ${taskId}" class="task-chip">${taskId}</a>`;
+        });
+        html += '</div>';
+        container.innerHTML = html;
         return;
     }
     
@@ -764,7 +826,7 @@ function displaySubjectStatusTasks(statusId, statusName, tasks) {
                 <div class="phase-tasks">
         `;
         
-        // Display CODE team tasks
+        // Display CODE team tasks - inline compact
         if (tasksByTeam['CODE'].length > 0) {
             html += `
                 <div class="team-subsection">
@@ -772,27 +834,11 @@ function displaySubjectStatusTasks(statusId, statusName, tasks) {
                     <div class="team-task-list">
             `;
             
-            // Split tasks into columns of max 5 tasks each
-            const tasksPerColumn = 5;
-            for (let i = 0; i < tasksByTeam['CODE'].length; i += tasksPerColumn) {
-                const columnTasks = tasksByTeam['CODE'].slice(i, i + tasksPerColumn);
-                html += '<div class="task-column">';
-                
-                columnTasks.forEach(function(task) {
-                    const taskId = String(task.id);
-                    const link = task.colabLink || '#';
-                    
-                    html += `
-                        <div class="subject-task-row">
-                            <a href="${link}" target="_blank" title="Task ${taskId}" class="task-link">
-                                ${taskId}
-                            </a>
-                        </div>
-                    `;
-                });
-                
-                html += '</div>';
-            }
+            tasksByTeam['CODE'].forEach(function(task) {
+                const taskId = String(task.id);
+                const link = task.colabLink || '#';
+                html += `<a href="${link}" target="_blank" title="Task ${taskId}" class="task-chip">${taskId}</a>`;
+            });
             
             html += `
                     </div>
@@ -800,7 +846,7 @@ function displaySubjectStatusTasks(statusId, statusName, tasks) {
             `;
         }
         
-        // Display STEM team tasks
+        // Display STEM team tasks - inline compact
         if (tasksByTeam['STEM'].length > 0) {
             html += `
                 <div class="team-subsection">
@@ -808,27 +854,11 @@ function displaySubjectStatusTasks(statusId, statusName, tasks) {
                     <div class="team-task-list">
             `;
             
-            // Split tasks into columns of max 5 tasks each
-            const tasksPerColumn = 5;
-            for (let i = 0; i < tasksByTeam['STEM'].length; i += tasksPerColumn) {
-                const columnTasks = tasksByTeam['STEM'].slice(i, i + tasksPerColumn);
-                html += '<div class="task-column">';
-                
-                columnTasks.forEach(function(task) {
-                    const taskId = String(task.id);
-                    const link = task.colabLink || '#';
-                    
-                    html += `
-                        <div class="subject-task-row">
-                            <a href="${link}" target="_blank" title="Task ${taskId}" class="task-link">
-                                ${taskId}
-                            </a>
-                        </div>
-                    `;
-                });
-                
-                html += '</div>';
-            }
+            tasksByTeam['STEM'].forEach(function(task) {
+                const taskId = String(task.id);
+                const link = task.colabLink || '#';
+                html += `<a href="${link}" target="_blank" title="Task ${taskId}" class="task-chip">${taskId}</a>`;
+            });
             
             html += `
                     </div>
