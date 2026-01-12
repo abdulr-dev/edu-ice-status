@@ -22,105 +22,113 @@
     
     <div class="container">
         <header>
-            <h1>📊 Edu-ICE Status Dashboard</h1>
+            <div class="header-content">
+                <h1>📊 Edu-ICE Status Dashboard</h1>
+                <div class="view-toggle">
+                    <button id="status-view-btn" class="toggle-btn active">Status View</button>
+                    <button id="subjects-view-btn" class="toggle-btn">Subjects View</button>
+                </div>
+            </div>
         </header>
 
-        <div class="tabs">
-            <button class="tab-btn active" data-tab="unclaimed">
-                Unclaimed
-                <span class="tab-count" id="count-unclaimed">0</span>
-            </button>
-            <button class="tab-btn" data-tab="inprogress">
-                In Progress
-                <span class="tab-count" id="count-inprogress">0</span>
-            </button>
-            <button class="tab-btn" data-tab="pending-review">
-                Pending Review
-                <span class="tab-count" id="count-pending-review">0</span>
-            </button>
-            <button class="tab-btn" data-tab="reviewed">
-                Reviewed
-                <span class="tab-count" id="count-reviewed">0</span>
-            </button>
-            <button class="tab-btn" data-tab="rework">
-                Rework
-                <span class="tab-count" id="count-rework">0</span>
-            </button>
-            <button class="tab-btn" data-tab="improper">
-                Improper
-                <span class="tab-count" id="count-improper">0</span>
-            </button>
-            <button class="tab-btn" data-tab="delivery">
-                Delivery
-                <span class="tab-count" id="count-delivery">0</span>
-            </button>
-            <button class="tab-btn" data-tab="trainer-stats">
-                Trainer Stats
-                <span class="tab-count" id="count-trainer-stats">0</span>
-            </button>
-        </div>
-
-        <div class="tab-content active" id="tab-unclaimed">
-            <div class="tab-summary" id="summary-unclaimed"></div>
-            <div class="subjects-wrapper">
-                <div class="loading" id="loading-unclaimed">Loading...</div>
-                <div class="subjects-container" id="subjects-unclaimed"></div>
+        <div id="dynamic-tabs">
+            <div class="tabs">
+                <button class="tab-btn active" data-tab="unclaimed">
+                    Unclaimed
+                    <span class="tab-count" id="count-unclaimed">0</span>
+                </button>
+                <button class="tab-btn" data-tab="inprogress">
+                    In Progress
+                    <span class="tab-count" id="count-inprogress">0</span>
+                </button>
+                <button class="tab-btn" data-tab="pending-review">
+                    Pending Review
+                    <span class="tab-count" id="count-pending-review">0</span>
+                </button>
+                <button class="tab-btn" data-tab="reviewed">
+                    Reviewed
+                    <span class="tab-count" id="count-reviewed">0</span>
+                </button>
+                <button class="tab-btn" data-tab="rework">
+                    Rework
+                    <span class="tab-count" id="count-rework">0</span>
+                </button>
+                <button class="tab-btn" data-tab="improper">
+                    Improper
+                    <span class="tab-count" id="count-improper">0</span>
+                </button>
+                <button class="tab-btn" data-tab="delivery">
+                    Delivery
+                    <span class="tab-count" id="count-delivery">0</span>
+                </button>
+                <button class="tab-btn" data-tab="trainer-stats">
+                    Trainer Stats
+                    <span class="tab-count" id="count-trainer-stats">0</span>
+                </button>
             </div>
-        </div>
 
-        <div class="tab-content" id="tab-inprogress">
-            <div class="tab-summary" id="summary-inprogress"></div>
-            <div class="subjects-wrapper">
-                <div class="loading" id="loading-inprogress">Loading...</div>
-                <div class="subjects-container" id="subjects-inprogress"></div>
+            <div class="tab-content active" id="tab-unclaimed">
+                <div class="tab-summary" id="summary-unclaimed"></div>
+                <div class="subjects-wrapper">
+                    <div class="loading" id="loading-unclaimed">Loading...</div>
+                    <div class="subjects-container" id="subjects-unclaimed"></div>
+                </div>
             </div>
-        </div>
 
-        <div class="tab-content" id="tab-pending-review">
-            <div class="tab-summary" id="summary-pending-review"></div>
-            <div class="subjects-wrapper">
-                <div class="loading" id="loading-pending-review">Loading...</div>
-                <div class="subjects-container" id="subjects-pending-review"></div>
+            <div class="tab-content" id="tab-inprogress">
+                <div class="tab-summary" id="summary-inprogress"></div>
+                <div class="subjects-wrapper">
+                    <div class="loading" id="loading-inprogress">Loading...</div>
+                    <div class="subjects-container" id="subjects-inprogress"></div>
+                </div>
             </div>
-        </div>
 
-        <div class="tab-content" id="tab-reviewed">
-            <div class="tab-summary" id="summary-reviewed"></div>
-            <div class="subjects-wrapper">
-                <div class="loading" id="loading-reviewed">Loading...</div>
-                <div class="subjects-container" id="subjects-reviewed"></div>
+            <div class="tab-content" id="tab-pending-review">
+                <div class="tab-summary" id="summary-pending-review"></div>
+                <div class="subjects-wrapper">
+                    <div class="loading" id="loading-pending-review">Loading...</div>
+                    <div class="subjects-container" id="subjects-pending-review"></div>
+                </div>
             </div>
-        </div>
 
-        <div class="tab-content" id="tab-rework">
-            <div class="tab-summary" id="summary-rework"></div>
-            <div class="subjects-wrapper">
-                <div class="loading" id="loading-rework">Loading...</div>
-                <div class="subjects-container" id="subjects-rework"></div>
+            <div class="tab-content" id="tab-reviewed">
+                <div class="tab-summary" id="summary-reviewed"></div>
+                <div class="subjects-wrapper">
+                    <div class="loading" id="loading-reviewed">Loading...</div>
+                    <div class="subjects-container" id="subjects-reviewed"></div>
+                </div>
             </div>
-        </div>
 
-        <div class="tab-content" id="tab-improper">
-            <div class="tab-summary" id="summary-improper"></div>
-            <div class="subjects-wrapper">
-                <div class="loading" id="loading-improper">Loading...</div>
-                <div class="subjects-container" id="subjects-improper"></div>
+            <div class="tab-content" id="tab-rework">
+                <div class="tab-summary" id="summary-rework"></div>
+                <div class="subjects-wrapper">
+                    <div class="loading" id="loading-rework">Loading...</div>
+                    <div class="subjects-container" id="subjects-rework"></div>
+                </div>
             </div>
-        </div>
 
-        <div class="tab-content" id="tab-delivery">
-            <div class="tab-summary" id="summary-delivery"></div>
-            <div class="subjects-wrapper">
-                <div class="loading" id="loading-delivery">Loading...</div>
-                <div class="subjects-container" id="subjects-delivery"></div>
+            <div class="tab-content" id="tab-improper">
+                <div class="tab-summary" id="summary-improper"></div>
+                <div class="subjects-wrapper">
+                    <div class="loading" id="loading-improper">Loading...</div>
+                    <div class="subjects-container" id="subjects-improper"></div>
+                </div>
             </div>
-        </div>
 
-        <div class="tab-content" id="tab-trainer-stats">
-            <div class="tab-summary" id="summary-trainer-stats"></div>
-            <div class="subjects-wrapper">
-                <div class="loading" id="loading-trainer-stats">Loading...</div>
-                <div class="subjects-container" id="subjects-trainer-stats"></div>
+            <div class="tab-content" id="tab-delivery">
+                <div class="tab-summary" id="summary-delivery"></div>
+                <div class="subjects-wrapper">
+                    <div class="loading" id="loading-delivery">Loading...</div>
+                    <div class="subjects-container" id="subjects-delivery"></div>
+                </div>
+            </div>
+
+            <div class="tab-content" id="tab-trainer-stats">
+                <div class="tab-summary" id="summary-trainer-stats"></div>
+                <div class="subjects-wrapper">
+                    <div class="loading" id="loading-trainer-stats">Loading...</div>
+                    <div class="subjects-container" id="subjects-trainer-stats"></div>
+                </div>
             </div>
         </div>
     </div>
