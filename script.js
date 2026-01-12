@@ -595,7 +595,6 @@ function initializeSubjectsView() {
         subjectTabsHTML += `
             <button class="tab-btn ${isActive}" data-subject="${subject}" data-tab-id="${tabId}">
                 ${subject}
-                <span class="tab-count" id="count-subject-${tabId}">0</span>
             </button>
         `;
     });
