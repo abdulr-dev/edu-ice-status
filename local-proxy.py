@@ -16,7 +16,7 @@ import json
 import os
 
 # Try to read from environment variable first, then use default
-AUTH_TOKEN = os.environ.get('AUTH_TOKEN', 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJlbWFpbCI6ImFiZHVsLnJAdHVyaW5nLmNvbSIsInN1YiI6OTk3LCJpYXQiOjE3Njg5MjQwOTUsImV4cCI6MTc2OTUyODg5NX0.imEszWWUA4aX_nEHmp3f6tk15vfwUsxZJ-G-f0JpyFg')
+AUTH_TOKEN = os.environ.get('AUTH_TOKEN', 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJlbWFpbCI6ImFiZHVsLnJAdHVyaW5nLmNvbSIsInN1YiI6OTk3LCJpYXQiOjE3Njk1Mjk1MzQsImV4cCI6MTc3MDEzNDMzNH0._KfH5iFFhziMKZK3Xuao6W9ARZy_2SuRKJUMGxmReR4')
 
 class ProxyHandler(BaseHTTPRequestHandler):
     def do_OPTIONS(self):

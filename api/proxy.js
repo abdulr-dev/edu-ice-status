@@ -30,7 +30,7 @@ module.exports = async (req, res) => {
 
         // Get auth token from request header first, then environment variable, then default
         const authHeader = req.headers.authorization || req.headers.Authorization;
-        const AUTH_TOKEN = authHeader ? authHeader.replace('Bearer ', '') : (process.env.AUTH_TOKEN || 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJlbWFpbCI6ImFiZHVsLnJAdHVyaW5nLmNvbSIsInN1YiI6OTk3LCJpYXQiOjE3Njg5MjQwOTUsImV4cCI6MTc2OTUyODg5NX0.imEszWWUA4aX_nEHmp3f6tk15vfwUsxZJ-G-f0JpyFg');
+        const AUTH_TOKEN = authHeader ? authHeader.replace('Bearer ', '') : (process.env.AUTH_TOKEN || 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJlbWFpbCI6ImFiZHVsLnJAdHVyaW5nLmNvbSIsInN1YiI6OTk3LCJpYXQiOjE3Njk1Mjk1MzQsImV4cCI6MTc3MDEzNDMzNH0._KfH5iFFhziMKZK3Xuao6W9ARZy_2SuRKJUMGxmReR4');
 
         const response = await fetch(apiUrl, {
             method: 'GET',
